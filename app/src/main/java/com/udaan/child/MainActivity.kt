@@ -1,21 +1,42 @@
 package com.udaan.child
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity          // <-- now resolvable
-import androidx.activity.viewModels                     // optional, if you use view‑models
-import com.udaan.child.ui.main.MainViewModel            // adjust if your VM lives elsewhere
-import kotlinx.android.synthetic.main.activity_main.*   // only if you still use synthetic; otherwise use view‑binding / data‑binding
+import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import com.udaan.child.ui.main.MainViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    // Example: obtain the ViewModel (requires the `activity-ktx` dependency you already have)
+    // ViewModel obtained via the activity‑ktx delegate
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)          // <-- now resolvable
 
-        // ---- your UI initialisation code here ----
-        // e.g. observe viewModel.uiState, set click listeners, etc.
+        // ← this line needs a real layout file at res/layout/activity_main.xml
+        setContentView(R.layout.activity_main)
+
+        // Example: observe the UI‑state coming from the ViewModel
+        lifecycleScope.launch {
+            viewModel.uiState.collect { state ->
+                when (state) {
+                    is MainViewModel.UiState.Idle -> { /* nothing */ }
+                    is MainViewModel.UiState.Optimizing -> {
+                        // show progress, e.g. a ProgressBar
+                    }
+                    is MainViewModel.UiState.Result -> {
+                        // show the optimisation result
+                    }
+                    is MainViewModel.UiState.Error -> {
+                        // show error message
+                    }
+                }
+            }
+        }
+
+        // If you have a button that should start the optimisation, wire it here:
+        // findViewById<Button>(R.id.btnStart).setOnClickListener { viewModel.triggerOptimization() }
     }
 }
