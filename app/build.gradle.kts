@@ -2,21 +2,20 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("kotlin-android")
-    id("kotlin-kapt")               // only if you use KAPT (Room, Hilt, etc.)
+    // Compose Compiler Gradle plugin (mandatory with Kotlin 2.0)
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
     namespace = "com.udaan.child"
-    compileSdk = 34                 // works with AGP 8.7.3
+    compileSdk = 34                     // works with AGP 8.7.3
     defaultConfig {
         applicationId = "com.udaan.child"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
-        // required for Android 12+ (API 31+) – makes the launcher activity exportable
+        // Android 12+ requires explicit exported flag for launcher activity
         manifestPlaceholders["exported"] = "true"
     }
 
@@ -35,12 +34,14 @@ android {
         jvmTarget = "17"
     }
 
-    // ---- Compose & resource handling ----
+    // ---- Compose ----
     buildFeatures {
         compose = true
-        viewBinding = true          // optional – keep if you use view‑binding
+        viewBinding = true               // keep if you use view‑binding
     }
     composeOptions {
+        // The Compose Compiler plugin now manages the version,
+        // but keeping the explicit version does not hurt.
         kotlinCompilerExtensionVersion = "1.5.13"
     }
     packagingOptions {
@@ -66,7 +67,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.0")
 
-    // ---- Compose ----
+    // ---- Compose (BOM manages versions) ----
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
