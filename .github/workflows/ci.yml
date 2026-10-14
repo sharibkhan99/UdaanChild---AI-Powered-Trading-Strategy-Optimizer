@@ -8,7 +8,7 @@ on:
     branches: [main]
 
 env:
-  # GA optimiser ke liye thoda extra heap
+  # Heap for the GA optimiser that runs inside the test suite
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
@@ -50,8 +50,8 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      # Google Maven repo for AGP resolution
-      - name: Add Google Maven to pluginManagement
+      # Make Google Maven visible to pluginManagement
+      - name: Add Google Maven to pluginManagement repositories
         run: |
           mkdir -p ~/.gradle
           cat <<'EOF' > ~/.gradle/init.gradle
@@ -66,16 +66,14 @@ jobs:
           }
           EOF
 
-      # Gradle wrapper (8.5) – creates ./gradlew
+      # Generate Gradle wrapper (8.5) – creates ./gradlew
       - name: Generate Gradle wrapper
         uses: gradle/gradle-build-action@v2
         with:
           arguments: wrapper --gradle-version 8.5
           gradle-version: '8.5'
 
-      # -------------------------------------------------
       # Run Android tasks via the wrapper (module = :app)
-      # -------------------------------------------------
       - name: Run lint (debug)
         run: ./gradlew :app:lintDebug --no-daemon
 
@@ -123,7 +121,8 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      - name: Add Google Maven to pluginManagement
+      # Same init‑script for the build job
+      - name: Add Google Maven to pluginManagement repositories
         run: |
           mkdir -p ~/.gradle
           cat <<'EOF' > ~/.gradle/init.gradle
