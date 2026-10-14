@@ -1,19 +1,16 @@
-// build.gradle.kts (project root)
+// build.gradle.kts   (project root)
+
 plugins {
-    // No plugins applied at root level – they are applied in the modules
+    // Apply plugins in sub‑projects only
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+    // add any other global plugins here with `apply false`
 }
 
 allprojects {
     repositories {
         google()
         mavenCentral()
-    }
-}
-
-// Common JVM / Kotlin options
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+        // jitpack, etc. if you need them
     }
 }
