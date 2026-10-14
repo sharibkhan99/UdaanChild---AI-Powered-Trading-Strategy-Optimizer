@@ -1,19 +1,22 @@
 package com.udaan.child.data.local
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
 
 /**
  * Thin wrapper around a **Preferences DataStore**.
- * All public functions are suspend – call them from a coroutine scope (viewModelScope, lifecycleScope, etc.).
+ * All public functions are suspend – call them from a coroutine scope
+ * (viewModelScope, lifecycleScope, etc.).
  */
 class PreferencesManager(private val context: Context) {
 
     // ---------------------------------------------------------------------
     // DataStore instance (created once per process)
     // ---------------------------------------------------------------------
+    // Extension‑property delegate on Context – gives a DataStore<Preferences>
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
     private val dataStore = context.dataStore
 
