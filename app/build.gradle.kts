@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.udaan.child"
-    compileSdk = 34                     // works with AGP 8.7.3
+    compileSdk = 34                     // compatible with AGP 8.7.3
     defaultConfig {
         applicationId = "com.udaan.child"
         minSdk = 24
@@ -19,11 +19,13 @@ android {
         manifestPlaceholders["exported"] = "true"
     }
 
-    // ---- Kotlin / Java compatibility (modern DSL) ----
+    // ---- Kotlin / Java compatibility (modern compilerOptions DSL) ----
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(JavaVersion.VERSION_17)
-            freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+            // JvmTarget is an enum – use the constant for Java 17
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            // freeCompilerArgs is a ListProperty<String> – use addAll
+            freeCompilerArgs.addAll(listOf("-Xopt-in=kotlin.RequiresOptIn"))
         }
     }
     compileOptions {
