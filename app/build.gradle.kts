@@ -2,7 +2,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    // Compose Compiler Gradle plugin (mandatory with Kotlin 2.0)
+    // Mandatory from Kotlin 2.0 when Compose is enabled
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -15,23 +15,20 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        // Android 12+ requires explicit exported flag for launcher activity
+        // Android 12+ requires the launcher activity to be exported
         manifestPlaceholders["exported"] = "true"
     }
 
-    // ---- Kotlin / Java compatibility ----
+    // ---- Kotlin / Java compatibility (modern DSL) ----
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(JavaVersion.VERSION_17)
             freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     // ---- Compose ----
@@ -44,7 +41,7 @@ android {
         // but keeping the explicit version does not hurt.
         kotlinCompilerExtensionVersion = "1.5.13"
     }
-    packagingOptions {
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE,NOTICE}"
         }
