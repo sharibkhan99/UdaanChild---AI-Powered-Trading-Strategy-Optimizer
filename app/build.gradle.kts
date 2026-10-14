@@ -1,63 +1,19 @@
 // app/build.gradle.kts
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("com.android.application") version "8.7.3" apply false   // AGP 8.7.3
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false // Kotlin 2.0.21 → compatible with Gradle 9.8
+    // …any other plugins you use
 }
 
 android {
     namespace = "com.udaan.child"
-    compileSdk = 34
-
+    compileSdk = 34               // ← 34 works with AGP 8.7.3 (36 needs AGP 8.8+)
     defaultConfig {
         applicationId = "com.udaan.child"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 34            // keep targetSdk in sync
         versionCode = 1
-        versionName = "1.0.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionName = "1.0"
     }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildFeatures {
-        viewBinding = true
-    }
-}
-
-dependencies {
-    // AndroidX core
-    implementation("androidx.core:core-ktx:1.13.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.0")
-    implementation("androidx.activity:activity-ktx:1.9.0")
-    implementation("com.google.android.material:material:1.12.0")
-
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
-
-    // WorkManager (used by your optimisation worker)
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
-    // Test dependencies
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    // …rest of your config (buildTypes, composeOptions, etc.)
 }
