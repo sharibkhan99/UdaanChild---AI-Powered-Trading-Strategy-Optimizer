@@ -8,12 +8,11 @@ on:
     branches: [main]
 
 env:
-  # Heap for the GA optimiser that runs inside the test suite
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
   # -------------------------------------------------
-  # 1️⃣  Lint + Unit‑test
+  # 1️⃣  Lint + Unit‑test (app module)
   # -------------------------------------------------
   lint-and-test:
     runs-on: ubuntu-latest
@@ -45,16 +44,12 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           api-level: 34
-          ndk-version: 27.3.13750724      # pinned to the ubuntu‑latest default
+          ndk-version: 27.3.13750724
           build-tools-version: 34.0.0
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      # -------------------------------------------------
-      # 2️⃣  Make sure the Android Gradle Plugin can be found.
-      #     The plugin lives in Google’s Maven repo, so we inject that
-      #     repository into *pluginManagement* via a Gradle init‑script.
-      # -------------------------------------------------
+      # Make Google Maven visible to pluginManagement
       - name: Add Google Maven to pluginManagement repositories
         run: |
           mkdir -p ~/.gradle
@@ -70,19 +65,18 @@ jobs:
           }
           EOF
 
-      # -------------------------------------------------
-      # 3️⃣  Run Gradle tasks – explicit Gradle 8.5 (no wrapper needed)
-      # -------------------------------------------------
+      # ---- Lint (app module) ----
       - name: Run lint (debug)
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: lintDebug
+          arguments: app:lintDebug
           gradle-version: '8.5'
 
+      # ---- Unit tests (app module) ----
       - name: Run unit tests (debug)
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: testDebugUnitTest
+          arguments: app:testDebugUnitTest
           gradle-version: '8.5'
 
       - name: Upload lint report
@@ -100,7 +94,7 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/**
 
   # -------------------------------------------------
-  # 4️⃣  Build APKs (only after lint+test pass)
+  # 2️⃣  Build APKs (app module)
   # -------------------------------------------------
   build-apk:
     needs: lint-and-test
@@ -126,7 +120,7 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      # The same init‑script is needed for the build job as well
+      # Same init‑script for the build job
       - name: Add Google Maven to pluginManagement repositories
         run: |
           mkdir -p ~/.gradle
@@ -145,13 +139,13 @@ jobs:
       - name: Build Debug APK
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: assembleDebug
+          arguments: app:assembleDebug
           gradle-version: '8.5'
 
       - name: Build Release APK
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: assembleRelease
+          arguments: app:assembleRelease
           gradle-version: '8.5'
 
       - name: Upload Debug APK
@@ -167,7 +161,7 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
 
   # -------------------------------------------------
-  # 5️⃣  Create a GitHub Release on every push to main
+  # 3️⃣  Create a GitHub Release on every push to main
   # -------------------------------------------------
   release:
     needs: build-apk
