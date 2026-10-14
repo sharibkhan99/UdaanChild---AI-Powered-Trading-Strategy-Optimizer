@@ -24,6 +24,7 @@ data class Chromosome(
                thresholds.contentEquals(other.thresholds) &&
                weights.contentEquals(other.weights)
     }
+
     override fun hashCode(): Int =
         31 * featureMask.contentHashCode() + thresholds.contentHashCode()
 }
@@ -54,6 +55,6 @@ object FeatureRegistry {
         "rsi_above_50",
         "atr_above_2"
     )
-    
+
     const val COUNT = 14
 }
