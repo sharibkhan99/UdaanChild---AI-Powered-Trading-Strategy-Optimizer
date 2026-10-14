@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- Example UI – replace with your real screen -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
