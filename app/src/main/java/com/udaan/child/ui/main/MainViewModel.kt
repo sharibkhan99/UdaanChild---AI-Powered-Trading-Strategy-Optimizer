@@ -1,15 +1,16 @@
 package com.udaan.child.ui.main
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
 import com.udaan.child.data.local.PreferencesManager
-import com.udaan.child.data.model.Chromosome
 import com.udaan.child.data.model.GAResult
 import com.udaan.child.data.repository.MarketDataRepository
+import com.udaan.child.data.repository.MarketDataRepositoryImpl
 import com.udaan.child.optimizer.GeneticOptimizer
 import com.udaan.child.worker.OptimizationWorker
 import kotlinx.coroutines.launch
@@ -18,14 +19,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.TimeUnit
 
 class MainViewModel(
-    private val repository: MarketDataRepository,
-    private val prefs: PreferencesManager
-) : ViewModel() {
+    application: Application,
+    private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
+    private val prefs: PreferencesManager = PreferencesManager(application)
+) : AndroidViewModel(application) {
 
-    /*  Explicitly type the MutableStateFlow as the sealed interface **UiState**.
-        Without the explicit type Kotlin infers the type as the singleton object
-        `UiState.Idle`, which later makes assignments of `Optimizing`, `Result`,
-        `Error` a type‑mismatch. */
+    // Explicit generic type prevents the “Idle‑only” inference problem.
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Idle)
     val uiState = _uiState.asStateFlow()
 
@@ -51,7 +50,6 @@ class MainViewModel(
                 val optimizer = GeneticOptimizer()
                 val result = optimizer.optimize(bars)
 
-                // Persist the result – the concrete implementation lives in PreferencesManager
                 prefs.saveOptimizationResult(result)
 
                 _uiState.value = UiState.Result(result)
@@ -89,12 +87,4 @@ class MainViewModel(
         val timestamp = prefs.getLastOptimizationTime()
         return GAResult(chromo, sharpe, features, emptyList(), timestamp)
     }
-
-    /** Helper to obtain a `Context` for WorkManager without leaking the ViewModel. */
-    private fun getApplication() = (repository as? MarketDataRepository)?.let {
-        // If your repository implementation holds a Context (e.g. via a `context` property)
-        // expose it here.  Otherwise replace with a proper `Application` reference
-        // (e.g. via Hilt/Koin injection).
-        (it as? { val context: android.content.Context })?.context
-    } ?: throw IllegalStateException("Repository does not provide a Context for WorkManager")
 }
