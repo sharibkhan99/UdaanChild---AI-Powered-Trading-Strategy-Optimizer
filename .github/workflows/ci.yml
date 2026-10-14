@@ -36,15 +36,15 @@ jobs:
           restore-keys: |
             android-sdk-${{ runner.os }}-
 
+      # ---- FIX: v4 use karo, NDK install mat karo (ubuntu-latest pe pre-installed hai) ----
       - name: Set up Android SDK
         if: steps.android-sdk-cache.outputs.cache-hit != 'true'
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            ndk;26.1.10909125
-            cmake;3.22.1
+          api-level: 34
+          ndk-version: 27.3.13750724   # ubuntu-latest pe ye default hai; likhne se version pin hota hai
+          build-tools-version: 34.0.0
+          cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
       - name: Grant execute permission for gradlew
@@ -86,13 +86,12 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            ndk;26.1.10909125
-            cmake;3.22.1
+          api-level: 34
+          ndk-version: 27.3.13750724
+          build-tools-version: 34.0.0
+          cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
       - name: Grant execute permission for gradlew
