@@ -22,23 +22,26 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
+          # disable the built‑in Gradle cache – the cache service is flaky right now
+          cache: ''
 
-      # 3️⃣ Build with Gradle 9.8.0 (no wrapper needed)
-      - name: Build Debug APK
-        uses: gradle/gradle-build-action@v3
+      # 3️⃣ Install the exact Gradle version we need (9.8.0) – no wrapper required
+      - name: Set up Gradle 9.8.0
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.8.0
-          arguments: assembleDebug --no-daemon --stacktrace
+          # turn off the Gradle‑cache that keeps hitting “service unavailable”
+          cache-disabled: true
 
-      # 4️⃣ Run unit tests
+      # 4️⃣ Build the debug APK
+      - name: Assemble Debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      # 5️⃣ Run local unit tests
       - name: Run Unit Tests
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 9.8.0
-          arguments: testDebugUnitTest --no-daemon --stacktrace
+        run: gradle testDebugUnitTest --no-daemon --stacktrace
 
-      # 5️⃣ Upload the debug APK as an artifact
+      # 6️⃣ Upload the generated APK as an artifact (kept 7 days)
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
