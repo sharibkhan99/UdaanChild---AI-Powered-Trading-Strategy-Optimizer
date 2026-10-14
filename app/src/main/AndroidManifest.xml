@@ -2,20 +2,33 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.udaan.child">
 
+    <!-- Permissions (add only what you really need) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
+        android:name=".UdaanApplication"          <!-- if you have a custom Application class; otherwise remove this line -->
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.UdaanChild">
+        android:theme="@style/Theme.UdaanChild"
+        android:exported="false">                 <!-- application‑level export not needed -->
+
+        <!-- Main launcher activity – **must** have android:exported="true" on API 31+ -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.UdaanChild.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Add other activities / services / receivers here, each with android:exported explicitly set -->
+
     </application>
 </manifest>
