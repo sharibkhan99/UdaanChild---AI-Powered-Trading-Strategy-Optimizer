@@ -51,19 +51,39 @@ jobs:
           accept-android-sdk-licenses: true
 
       # -------------------------------------------------
-      # Gradle Build Action – explicit Gradle version (no wrapper needed)
+      # 2️⃣  Make sure the Android Gradle Plugin can be found.
+      #     The plugin lives in Google’s Maven repo, so we inject that
+      #     repository into *pluginManagement* via a Gradle init‑script.
+      # -------------------------------------------------
+      - name: Add Google Maven to pluginManagement repositories
+        run: |
+          mkdir -p ~/.gradle
+          cat <<'EOF' > ~/.gradle/init.gradle
+          settingsEvaluated { settings ->
+            settings.pluginManagement {
+              repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+              }
+            }
+          }
+          EOF
+
+      # -------------------------------------------------
+      # 3️⃣  Run Gradle tasks – explicit Gradle 8.5 (no wrapper needed)
       # -------------------------------------------------
       - name: Run lint (debug)
         uses: gradle/gradle-build-action@v2
         with:
           arguments: lintDebug
-          gradle-version: '8.5'          # <-- FIX: matches AGP 8.5
+          gradle-version: '8.5'
 
       - name: Run unit tests (debug)
         uses: gradle/gradle-build-action@v2
         with:
           arguments: testDebugUnitTest
-          gradle-version: '8.5'          # <-- FIX
+          gradle-version: '8.5'
 
       - name: Upload lint report
         if: always()
@@ -80,7 +100,7 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/**
 
   # -------------------------------------------------
-  # 2️⃣  Build APKs (only after lint+test pass)
+  # 4️⃣  Build APKs (only after lint+test pass)
   # -------------------------------------------------
   build-apk:
     needs: lint-and-test
@@ -106,17 +126,33 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
+      # The same init‑script is needed for the build job as well
+      - name: Add Google Maven to pluginManagement repositories
+        run: |
+          mkdir -p ~/.gradle
+          cat <<'EOF' > ~/.gradle/init.gradle
+          settingsEvaluated { settings ->
+            settings.pluginManagement {
+              repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+              }
+            }
+          }
+          EOF
+
       - name: Build Debug APK
         uses: gradle/gradle-build-action@v2
         with:
           arguments: assembleDebug
-          gradle-version: '8.5'          # <-- FIX
+          gradle-version: '8.5'
 
       - name: Build Release APK
         uses: gradle/gradle-build-action@v2
         with:
           arguments: assembleRelease
-          gradle-version: '8.5'          # <-- FIX
+          gradle-version: '8.5'
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -131,7 +167,7 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
 
   # -------------------------------------------------
-  # 3️⃣  Create a GitHub Release on every push to main
+  # 5️⃣  Create a GitHub Release on every push to main
   # -------------------------------------------------
   release:
     needs: build-apk
