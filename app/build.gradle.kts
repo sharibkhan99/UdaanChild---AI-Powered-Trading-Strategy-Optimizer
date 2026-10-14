@@ -1,19 +1,22 @@
-// app/build.gradle.kts
+// build.gradle.kts  (project root)
+
 plugins {
-    id("com.android.application") version "8.7.3" apply false   // AGP 8.7.3
-    id("org.jetbrains.kotlin.android") version "2.0.21" apply false // Kotlin 2.0.21 → compatible with Gradle 9.8
-    // …any other plugins you use
+    // Apply the Android Gradle Plugin and Kotlin plugin *only* in the sub‑projects
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+    // If you use any other global plugins (e.g. kotlin‑serialization, hilt, etc.) add them here with `apply false`
 }
 
-android {
-    namespace = "com.udaan.child"
-    compileSdk = 34               // ← 34 works with AGP 8.7.3 (36 needs AGP 8.8+)
-    defaultConfig {
-        applicationId = "com.udaan.child"
-        minSdk = 24
-        targetSdk = 34            // keep targetSdk in sync
-        versionCode = 1
-        versionName = "1.0"
+// No `tasks.withType<KotlinCompile>()` here – that belongs in the **module** (app) build file.
+// The root project only needs repository configuration.
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // Add any other maven repos you need (jitpack, etc.)
     }
-    // …rest of your config (buildTypes, composeOptions, etc.)
 }
+
+// Optional: common Gradle‑JVM settings for the whole build
+// (you can also keep these in gradle.properties)
