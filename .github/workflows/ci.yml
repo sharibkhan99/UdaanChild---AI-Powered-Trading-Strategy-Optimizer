@@ -8,12 +8,12 @@ on:
     branches: [main]
 
 env:
-  # Heap for the GA optimiser that runs inside the test suite
+  # GA optimiser ke liye thoda extra heap
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
   # -------------------------------------------------
-  # 1️⃣  Lint + Unit‑test (Android module)
+  # 1️⃣  Lint + Unit‑test (app module)
   # -------------------------------------------------
   lint-and-test:
     runs-on: ubuntu-latest
@@ -50,10 +50,8 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      # -------------------------------------------------
-      # Make Google Maven visible to pluginManagement
-      # -------------------------------------------------
-      - name: Add Google Maven to pluginManagement repositories
+      # Google Maven repo for AGP resolution
+      - name: Add Google Maven to pluginManagement
         run: |
           mkdir -p ~/.gradle
           cat <<'EOF' > ~/.gradle/init.gradle
@@ -68,9 +66,7 @@ jobs:
           }
           EOF
 
-      # -------------------------------------------------
-      # Generate a Gradle wrapper (8.5) – creates ./gradlew
-      # -------------------------------------------------
+      # Gradle wrapper (8.5) – creates ./gradlew
       - name: Generate Gradle wrapper
         uses: gradle/gradle-build-action@v2
         with:
@@ -78,37 +74,13 @@ jobs:
           gradle-version: '8.5'
 
       # -------------------------------------------------
-      # Show the project hierarchy – very useful for debugging
-      # -------------------------------------------------
-      - name: List Gradle projects
-        run: ./gradlew projects --no-daemon
-
-      # -------------------------------------------------
-      # Run lint – first try the conventional :app module,
-      # then fall back to “run on every sub‑project that has it”.
+      # Run Android tasks via the wrapper (module = :app)
       # -------------------------------------------------
       - name: Run lint (debug)
-        run: |
-          set -e
-          if ./gradlew :app:lintDebug --no-daemon ; then
-            echo "✅ lintDebug succeeded on :app"
-          else
-            echo "⚠️ :app not found or lint failed – trying project‑wide lintDebug"
-            ./gradlew lintDebug --no-daemon
-          fi
+        run: ./gradlew :app:lintDebug --no-daemon
 
-      # -------------------------------------------------
-      # Run unit tests – same strategy
-      # -------------------------------------------------
       - name: Run unit tests (debug)
-        run: |
-          set -e
-          if ./gradlew :app:testDebugUnitTest --no-daemon ; then
-            echo "✅ testDebugUnitTest succeeded on :app"
-          else
-            echo "⚠️ :app not found or tests failed – trying project‑wide testDebugUnitTest"
-            ./gradlew testDebugUnitTest --no-daemon
-          fi
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
 
       - name: Upload lint report
         if: always()
@@ -125,7 +97,7 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/**
 
   # -------------------------------------------------
-  # 2️⃣  Build APKs (Android module)
+  # 2️⃣  Build APKs (app module)
   # -------------------------------------------------
   build-apk:
     needs: lint-and-test
@@ -151,8 +123,7 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      # Same init‑script for the build job
-      - name: Add Google Maven to pluginManagement repositories
+      - name: Add Google Maven to pluginManagement
         run: |
           mkdir -p ~/.gradle
           cat <<'EOF' > ~/.gradle/init.gradle
@@ -167,26 +138,12 @@ jobs:
           }
           EOF
 
-      # Wrapper already exists from the previous job (workspace is shared)
+      # Wrapper already exists from previous job (shared workspace)
       - name: Build Debug APK
-        run: |
-          set -e
-          if ./gradlew :app:assembleDebug --no-daemon ; then
-            echo "✅ assembleDebug succeeded on :app"
-          else
-            echo "⚠️ :app not found – trying project‑wide assembleDebug"
-            ./gradlew assembleDebug --no-daemon
-          fi
+        run: ./gradlew :app:assembleDebug --no-daemon
 
       - name: Build Release APK
-        run: |
-          set -e
-          if ./gradlew :app:assembleRelease --no-daemon ; then
-            echo "✅ assembleRelease succeeded on :app"
-          else
-            echo "⚠️ :app not found – trying project‑wide assembleRelease"
-            ./gradlew assembleRelease --no-daemon
-          fi
+        run: ./gradlew :app:assembleRelease --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
