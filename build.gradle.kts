@@ -1,13 +1,6 @@
-buildscript {
-    dependencies {
-        // No additional classpath dependencies needed with version catalogs
-    }
-}
-
+// build.gradle.kts (project root)
 plugins {
-    alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.kapt) apply false
+    // No plugins applied at root level – they are applied in the modules
 }
 
 allprojects {
@@ -17,6 +10,10 @@ allprojects {
     }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+// Common JVM / Kotlin options
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    }
 }
