@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme – inherits from the Material3 theme supplied by the Compose BOM -->
-    <style name="Theme.UdaanChild" parent="Theme.Material3.DayNight">
+    <!-- Base application theme – inherits from AppCompat (always present) -->
+    <style name="Theme.UdaanChild" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Primary brand color -->
         <item name="colorPrimary">@color/purple_700</item>
         <item name="colorPrimaryVariant">@color/purple_200</item>
