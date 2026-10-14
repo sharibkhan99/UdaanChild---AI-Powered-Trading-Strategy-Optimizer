@@ -8,6 +8,7 @@ on:
     branches: [main]
 
 env:
+  # Heap for the GA optimiser that runs inside the test suite
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
@@ -65,19 +66,23 @@ jobs:
           }
           EOF
 
-      # ---- Lint (app module) ----
-      - name: Run lint (debug)
+      # -------------------------------------------------
+      # 2️⃣  Generate a Gradle wrapper (8.5) – creates ./gradlew
+      # -------------------------------------------------
+      - name: Generate Gradle wrapper
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: app:lintDebug
+          arguments: wrapper --gradle-version 8.5
           gradle-version: '8.5'
 
-      # ---- Unit tests (app module) ----
+      # -------------------------------------------------
+      # 3️⃣  Run Android tasks via the wrapper (module = :app)
+      # -------------------------------------------------
+      - name: Run lint (debug)
+        run: ./gradlew :app:lintDebug
+
       - name: Run unit tests (debug)
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: app:testDebugUnitTest
-          gradle-version: '8.5'
+        run: ./gradlew :app:testDebugUnitTest
 
       - name: Upload lint report
         if: always()
@@ -94,7 +99,7 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/**
 
   # -------------------------------------------------
-  # 2️⃣  Build APKs (app module)
+  # 4️⃣  Build APKs (app module)
   # -------------------------------------------------
   build-apk:
     needs: lint-and-test
@@ -136,17 +141,12 @@ jobs:
           }
           EOF
 
+      # Wrapper already exists from the previous job (workspace is shared)
       - name: Build Debug APK
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: app:assembleDebug
-          gradle-version: '8.5'
+        run: ./gradlew :app:assembleDebug
 
       - name: Build Release APK
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: app:assembleRelease
-          gradle-version: '8.5'
+        run: ./gradlew :app:assembleRelease
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -161,7 +161,7 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
 
   # -------------------------------------------------
-  # 3️⃣  Create a GitHub Release on every push to main
+  # 5️⃣  Create a GitHub Release on every push to main
   # -------------------------------------------------
   release:
     needs: build-apk
