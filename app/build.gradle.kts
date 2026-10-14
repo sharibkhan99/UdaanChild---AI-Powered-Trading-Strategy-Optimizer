@@ -32,8 +32,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // ‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑
+    // Modern replacement for the deprecated `kotlinOptions` block
+    // ‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑
+    kotlin {
+        jvmToolchain(17)
     }
 }
 
@@ -43,9 +46,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-ktx:1.9.0")
-
-    // *** NEW – AppCompat (provides AppCompatActivity, setContentView, etc.) ***
     implementation("androidx.appcompat:appcompat:1.7.0")
+
+    // *** NEW – ConstraintLayout (provides the layout_constraint* attributes) ***
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
     // ----- DataStore (Preferences) -------------------------------------------
     implementation("androidx.datastore:datastore-preferences:1.1.1")
