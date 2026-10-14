@@ -55,6 +55,5 @@ object FeatureRegistry {
         "rsi_above_50",
         "atr_above_2"
     )
-
     const val COUNT = 14
 }
