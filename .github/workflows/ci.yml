@@ -1,178 +1,21 @@
-# .github/workflows/ci.yml
-name: CI/CD Pipeline
+// build.gradle.kts  (project root)
+plugins {
+    // No plugins are applied at the root level.
+    // The Android Gradle Plugin and Kotlin plugin are applied in the modules.
+}
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
 
-env:
-  # Heap for the GA optimiser that runs inside the test suite
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
+/* 
+   ❌  REMOVE the KotlinCompile configuration that was here.
+   It belongs in the module where the Kotlin plugin is applied (app/build.gradle.kts).
+*/
 
-jobs:
-  # -------------------------------------------------
-  # 1️⃣  Lint + Unit‑test (app module)
-  # -------------------------------------------------
-  lint-and-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-
-      - name: Cache Android SDK
-        id: android-sdk-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk
-            ~/.android
-          key: android-sdk-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            android-sdk-${{ runner.os }}-
-
-      - name: Set up Android SDK (v4 – Node 24 compatible)
-        if: steps.android-sdk-cache.outputs.cache-hit != 'true'
-        uses: android-actions/setup-android@v4
-        with:
-          api-level: 34
-          ndk-version: 27.3.13750724
-          build-tools-version: 34.0.0
-          cmake-version: 3.22.1
-          accept-android-sdk-licenses: true
-
-      # Make Google Maven visible to pluginManagement
-      - name: Add Google Maven to pluginManagement repositories
-        run: |
-          mkdir -p ~/.gradle
-          cat <<'EOF' > ~/.gradle/init.gradle
-          settingsEvaluated { settings ->
-            settings.pluginManagement {
-              repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-              }
-            }
-          }
-          EOF
-
-      # Generate Gradle wrapper (8.5) – creates ./gradlew
-      - name: Generate Gradle wrapper
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: wrapper --gradle-version 8.5
-          gradle-version: '8.5'
-
-      # Run Android tasks via the wrapper (module = :app)
-      - name: Run lint (debug)
-        run: ./gradlew :app:lintDebug --no-daemon
-
-      - name: Run unit tests (debug)
-        run: ./gradlew :app:testDebugUnitTest --no-daemon
-
-      - name: Upload lint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-report
-          path: app/build/reports/lint-results-debug.html
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: app/build/reports/tests/testDebugUnitTest/**
-
-  # -------------------------------------------------
-  # 2️⃣  Build APKs (app module)
-  # -------------------------------------------------
-  build-apk:
-    needs: lint-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          api-level: 34
-          ndk-version: 27.3.13750724
-          build-tools-version: 34.0.0
-          cmake-version: 3.22.1
-          accept-android-sdk-licenses: true
-
-      # Same init‑script for the build job
-      - name: Add Google Maven to pluginManagement repositories
-        run: |
-          mkdir -p ~/.gradle
-          cat <<'EOF' > ~/.gradle/init.gradle
-          settingsEvaluated { settings ->
-            settings.pluginManagement {
-              repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-              }
-            }
-          }
-          EOF
-
-      # Wrapper already exists from previous job (shared workspace)
-      - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon
-
-      - name: Build Release APK
-        run: ./gradlew :app:assembleRelease --no-daemon
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
-
-  # -------------------------------------------------
-  # 3️⃣  Create a GitHub Release on every push to main
-  # -------------------------------------------------
-  release:
-    needs: build-apk
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
-          generate_release_notes: true
-          files: |
-            app/build/outputs/apk/release/app-release.apk
+// If you need any truly global configuration (e.g. a common version catalog,
+// strict dependency resolution, etc.) you can add it here, but **do not**
+// reference `kotlin`, `kotlinOptions`, `jvmTarget`, etc. in this file.
