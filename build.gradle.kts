@@ -1,17 +1,11 @@
 // build.gradle.kts  (project root)
-
 plugins {
-    // Android Gradle Plugin
-    id("com.android.application") version "8.7.3" apply false
-    // Kotlin 2.0.x
-    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
-    // **Required from Kotlin 2.0 when Compose is used**
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false
-}
+    // Android Gradle Plugin – keep the version you already use
+    id("com.android.application") version "8.5.0" apply false
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    // Kotlin Android plugin – version must match the serialization plugin
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+
+    // Kotlin Serialization plugin – same version as the Kotlin plugin
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21" apply false
 }
