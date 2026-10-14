@@ -8,46 +8,46 @@ import com.udaan.child.data.local.PreferencesManager
 import com.udaan.child.data.model.DailyBar
 import com.udaan.child.data.model.GAResult
 import com.udaan.child.data.repository.MarketDataRepository
+import com.udaan.child.data.repository.MarketDataRepositoryImpl
 import com.udaan.child.optimizer.GeneticOptimizer
+import kotlinx.coroutines.Dispatchers
 
+/**
+ * CoroutineWorker that runs the genetic optimisation in the background.
+ * The required dependencies are created from the supplied Context – this
+ * keeps the worker’s constructor compatible with WorkManager.
+ */
 class OptimizationWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
+    // ---------------------------------------------------------------------
+    // Dependencies – instantiated locally (no extra constructor params)
+    // ---------------------------------------------------------------------
+    private val repository: MarketDataRepository = MarketDataRepositoryImpl(applicationContext)
+    private val prefs: PreferencesManager = PreferencesManager(applicationContext)
+
     override suspend fun doWork(): ListenableWorker.Result {
         return try {
             val symbol = inputData.getString(KEY_SYMBOL) ?: "NIFTY"
-            
-            // TODO: Get real instances from your DI or Application class
-            // For now, this will fail at runtime until you wire dependencies
-            val repository = getRepository()
-            val prefs = getPrefs()
-            
             val bars = repository.getHistoricalData(symbol)
 
             if (bars.size < 500) {
-                return ListenableWorker.Result.retry()
+                // Not enough data – ask WorkManager to retry later (exponential back‑off)
+                ListenableWorker.Result.retry()
+            } else {
+                val optimizer = GeneticOptimizer()
+                val result = optimizer.optimize(bars)
+
+                prefs.saveOptimizationResult(result)
+
+                ListenableWorker.Result.success()
             }
-
-            val optimizer = GeneticOptimizer()
-            val result = optimizer.optimize(bars)
-            prefs.saveOptimizationResult(result)
-
-            ListenableWorker.Result.success()
         } catch (e: Exception) {
+            // Any unexpected error → retry (you may want a more sophisticated policy)
             ListenableWorker.Result.retry()
         }
-    }
-
-    private fun getRepository(): MarketDataRepository {
-        // Replace with your actual DI / Application singleton
-        throw UnsupportedOperationException("Wire MarketDataRepository via DI")
-    }
-
-    private fun getPrefs(): PreferencesManager {
-        // Replace with your actual DI / Application singleton
-        throw UnsupportedOperationException("Wire PreferencesManager via DI")
     }
 
     companion object {
