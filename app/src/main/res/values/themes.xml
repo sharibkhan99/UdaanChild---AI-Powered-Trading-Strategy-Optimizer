@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Minimal theme – the activity will use this (or the system default) -->
-    <style name="Theme.UdaanChild" parent="Theme.AppCompat.DayNight.NoActionBar" />
+    <!-- No custom theme – the app will fall back to the system / AppCompat default -->
 </resources>
