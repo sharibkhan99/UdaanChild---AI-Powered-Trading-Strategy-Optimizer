@@ -1,21 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme – inherits from AppCompat (always present) -->
-    <style name="Theme.UdaanChild" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Primary brand color -->
-        <item name="colorPrimary">@color/udaan_purple_700</item>
-        <item name="colorPrimaryVariant">@color/udaan_purple_200</item>
-        <item name="colorOnPrimary">@color/udaan_white</item>
-
-        <!-- Secondary brand color -->
-        <item name="colorSecondary">@color/udaan_teal_200</item>
-        <item name="colorSecondaryVariant">@color/udaan_teal_700</item>
-        <item name="colorOnSecondary">@color/udaan_black</item>
-
-        <!-- Status bar color -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-
-        <!-- Enable window content transitions -->
-        <item name="android:windowActivityTransitions">true</item>
-    </style>
+    <!-- Minimal theme – the activity will use this (or the system default) -->
+    <style name="Theme.UdaanChild" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>
