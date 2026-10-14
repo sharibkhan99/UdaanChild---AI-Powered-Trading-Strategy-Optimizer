@@ -13,7 +13,7 @@ env:
 
 jobs:
   # -------------------------------------------------
-  # 1️⃣  Lint + Unit‑test (app module)
+  # 1️⃣  Lint + Unit‑test (Android module)
   # -------------------------------------------------
   lint-and-test:
     runs-on: ubuntu-latest
@@ -50,7 +50,9 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
+      # -------------------------------------------------
       # Make Google Maven visible to pluginManagement
+      # -------------------------------------------------
       - name: Add Google Maven to pluginManagement repositories
         run: |
           mkdir -p ~/.gradle
@@ -67,7 +69,7 @@ jobs:
           EOF
 
       # -------------------------------------------------
-      # 2️⃣  Generate a Gradle wrapper (8.5) – creates ./gradlew
+      # Generate a Gradle wrapper (8.5) – creates ./gradlew
       # -------------------------------------------------
       - name: Generate Gradle wrapper
         uses: gradle/gradle-build-action@v2
@@ -76,13 +78,37 @@ jobs:
           gradle-version: '8.5'
 
       # -------------------------------------------------
-      # 3️⃣  Run Android tasks via the wrapper (module = :app)
+      # Show the project hierarchy – very useful for debugging
+      # -------------------------------------------------
+      - name: List Gradle projects
+        run: ./gradlew projects --no-daemon
+
+      # -------------------------------------------------
+      # Run lint – first try the conventional :app module,
+      # then fall back to “run on every sub‑project that has it”.
       # -------------------------------------------------
       - name: Run lint (debug)
-        run: ./gradlew :app:lintDebug
+        run: |
+          set -e
+          if ./gradlew :app:lintDebug --no-daemon ; then
+            echo "✅ lintDebug succeeded on :app"
+          else
+            echo "⚠️ :app not found or lint failed – trying project‑wide lintDebug"
+            ./gradlew lintDebug --no-daemon
+          fi
 
+      # -------------------------------------------------
+      # Run unit tests – same strategy
+      # -------------------------------------------------
       - name: Run unit tests (debug)
-        run: ./gradlew :app:testDebugUnitTest
+        run: |
+          set -e
+          if ./gradlew :app:testDebugUnitTest --no-daemon ; then
+            echo "✅ testDebugUnitTest succeeded on :app"
+          else
+            echo "⚠️ :app not found or tests failed – trying project‑wide testDebugUnitTest"
+            ./gradlew testDebugUnitTest --no-daemon
+          fi
 
       - name: Upload lint report
         if: always()
@@ -99,7 +125,7 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/**
 
   # -------------------------------------------------
-  # 4️⃣  Build APKs (app module)
+  # 2️⃣  Build APKs (Android module)
   # -------------------------------------------------
   build-apk:
     needs: lint-and-test
@@ -143,10 +169,24 @@ jobs:
 
       # Wrapper already exists from the previous job (workspace is shared)
       - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug
+        run: |
+          set -e
+          if ./gradlew :app:assembleDebug --no-daemon ; then
+            echo "✅ assembleDebug succeeded on :app"
+          else
+            echo "⚠️ :app not found – trying project‑wide assembleDebug"
+            ./gradlew assembleDebug --no-daemon
+          fi
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleRelease
+        run: |
+          set -e
+          if ./gradlew :app:assembleRelease --no-daemon ; then
+            echo "✅ assembleRelease succeeded on :app"
+          else
+            echo "⚠️ :app not found – trying project‑wide assembleRelease"
+            ./gradlew assembleRelease --no-daemon
+          fi
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -161,7 +201,7 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
 
   # -------------------------------------------------
-  # 5️⃣  Create a GitHub Release on every push to main
+  # 3️⃣  Create a GitHub Release on every push to main
   # -------------------------------------------------
   release:
     needs: build-apk
