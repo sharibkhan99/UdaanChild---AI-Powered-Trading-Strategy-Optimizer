@@ -8,7 +8,6 @@ on:
     branches: [main]
 
 env:
-  # Give the Gradle daemon enough heap for the GA‑optimiser
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
@@ -16,15 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # -------------------------------------------------
-      # 1️⃣  Checkout (latest v4 – works on Node 24)
-      # -------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # -------------------------------------------------
-      # 2️⃣  JDK 17 (setup‑java v5 – no deprecation warning)
-      # -------------------------------------------------
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -32,14 +25,21 @@ jobs:
           java-version: 17
           cache: gradle
 
-      # -------------------------------------------------
-      # 3️⃣  Android SDK (setup‑android v3 – new input schema)
-      # -------------------------------------------------
+      - name: Cache Android SDK
+        id: android-sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk
+            ~/.android
+          key: android-sdk-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            android-sdk-${{ runner.os }}-
+
       - name: Set up Android SDK
+        if: steps.android-sdk-cache.outputs.cache-hit != 'true'
         uses: android-actions/setup-android@v3
         with:
-          # The new action only accepts a `packages` list.
-          # We ask for the platform, build‑tools and the NDK you used locally.
           packages: |
             platforms;android-34
             build-tools;34.0.0
@@ -47,27 +47,15 @@ jobs:
             cmake;3.22.1
           accept-android-sdk-licenses: true
 
-      # -------------------------------------------------
-      # 4️⃣  Make gradlew executable
-      # -------------------------------------------------
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # -------------------------------------------------
-      # 5️⃣  Run Lint (debug variant)
-      # -------------------------------------------------
       - name: Run lint
         run: ./gradlew lintDebug
 
-      # -------------------------------------------------
-      # 6️⃣  Run unit tests
-      # -------------------------------------------------
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
-      # -------------------------------------------------
-      # 7️⃣  Upload Lint HTML report (correct path)
-      # -------------------------------------------------
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v4
@@ -75,9 +63,6 @@ jobs:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
 
-      # -------------------------------------------------
-      # 8️⃣  Upload unit‑test reports (correct glob)
-      # -------------------------------------------------
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,9 +70,6 @@ jobs:
           name: test-reports
           path: app/build/reports/tests/testDebugUnitTest/**
 
-  # -------------------------------------------------
-  # 9️⃣  Build APKs (only after lint+test pass)
-  # -------------------------------------------------
   build-apk:
     needs: lint-and-test
     runs-on: ubuntu-latest
@@ -134,9 +116,6 @@ jobs:
           name: app-release-apk
           path: app/build/outputs/apk/release/app-release.apk
 
-  # -------------------------------------------------
-  # 🔟  Create a GitHub Release on every push to main
-  # -------------------------------------------------
   release:
     needs: build-apk
     runs-on: ubuntu-latest
