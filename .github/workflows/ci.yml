@@ -8,9 +8,13 @@ on:
     branches: [main]
 
 env:
+  # Enough heap for the GA optimiser that runs inside the test suite
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false"
 
 jobs:
+  # -------------------------------------------------
+  # 1️⃣  Lint + Unit‑test
+  # -------------------------------------------------
   lint-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -18,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -36,25 +40,30 @@ jobs:
           restore-keys: |
             android-sdk-${{ runner.os }}-
 
-      # ---- FIX: v4 use karo, NDK install mat karo (ubuntu-latest pe pre-installed hai) ----
-      - name: Set up Android SDK
+      - name: Set up Android SDK (v4 – Node 24 compatible)
         if: steps.android-sdk-cache.outputs.cache-hit != 'true'
         uses: android-actions/setup-android@v4
         with:
           api-level: 34
-          ndk-version: 27.3.13750724   # ubuntu-latest pe ye default hai; likhne se version pin hota hai
+          ndk-version: 27.3.13750724      # pinned to the ubuntu‑latest default
           build-tools-version: 34.0.0
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+      # -------------------------------------------------
+      # Gradle Build Action – handles wrapper, caching, daemon
+      # -------------------------------------------------
+      - name: Run lint (debug)
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: lintDebug
+          gradle-version: wrapper   # will download the wrapper defined in your project (or the latest if none)
 
-      - name: Run lint
-        run: ./gradlew lintDebug
-
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run unit tests (debug)
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: testDebugUnitTest
+          gradle-version: wrapper
 
       - name: Upload lint report
         if: always()
@@ -70,6 +79,9 @@ jobs:
           name: test-reports
           path: app/build/reports/tests/testDebugUnitTest/**
 
+  # -------------------------------------------------
+  # 2️⃣  Build APKs (only after lint+test pass)
+  # -------------------------------------------------
   build-apk:
     needs: lint-and-test
     runs-on: ubuntu-latest
@@ -78,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -94,14 +106,17 @@ jobs:
           cmake-version: 3.22.1
           accept-android-sdk-licenses: true
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assembleDebug
+          gradle-version: wrapper
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assembleRelease
+          gradle-version: wrapper
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -115,6 +130,9 @@ jobs:
           name: app-release-apk
           path: app/build/outputs/apk/release/app-release.apk
 
+  # -------------------------------------------------
+  # 3️⃣  Create a GitHub Release on every push to main
+  # -------------------------------------------------
   release:
     needs: build-apk
     runs-on: ubuntu-latest
