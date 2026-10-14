@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- No custom colours – the theme above uses only the built‑in AppCompat palette -->
+    <!-- No custom colours – all colour handling is delegated to the Material / AppCompat libraries -->
 </resources>
