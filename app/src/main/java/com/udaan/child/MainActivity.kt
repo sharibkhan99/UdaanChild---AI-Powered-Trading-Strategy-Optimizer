@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.udaan.child.ui.main.MainViewModel
+import com.udaan.child.R                 // <-- adds the generated R class (contains R.layout.activity_main)
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -15,7 +16,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ← this line needs a real layout file at res/layout/activity_main.xml
+        // The layout file must exist at  res/layout/activity_main.xml
         setContentView(R.layout.activity_main)
 
         // Example: observe the UI‑state coming from the ViewModel
