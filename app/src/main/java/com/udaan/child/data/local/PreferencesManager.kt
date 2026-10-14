@@ -1,46 +1,65 @@
 package com.udaan.child.data.local
 
 import android.content.Context
-import androidx.datastore.preferences.core.mutations
-import androidx.datastore.preferences.core.preferencesKey
-import androidx.datastore.preferences.rx.preferencesDataStore
-import com.udaan.child.data.model.Chromosome
-import com.udaan.child.data.model.GAResult
-import com.google.gson.Gson
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.tasks.await
-import java.util.concurrent.Executors
+import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.first
 
+/**
+ * Thin wrapper around a **Preferences DataStore**.
+ * All public functions are suspend – call them from a coroutine scope (viewModelScope, lifecycleScope, etc.).
+ */
 class PreferencesManager(private val context: Context) {
-    
-    private val Context.dataStore by preferencesDataStore(name = "udaan_prefs")
-    private val gson = Gson()
-    
-    private val BEST_CHROMOSOME_JSON = stringPreferencesKey("best_chromosome_json")
-    private val BEST_SHARPE = floatPreferencesKey("best_sharpe")
-    private val ACTIVE_FEATURES_JSON = stringPreferencesKey("active_features_json")
-    private val LAST_OPTIMIZATION_TIME = longPreferencesKey("last_optimization_time")
-    
-    suspend fun saveOptimizationResult(result: GAResult) {
-        context.dataStore.edit { prefs ->
-            prefs[BEST_CHROMOSOME_JSON] = gson.toJson(result.bestChromosome)
-            prefs[BEST_SHARPE] = result.bestSharpe
-            prefs[ACTIVE_FEATURES_JSON] = gson.toJson(result.activeFeatures)
-            prefs[LAST_OPTIMIZATION_TIME] = result.timestamp
-        }
+
+    // ---------------------------------------------------------------------
+    // DataStore instance (created once per process)
+    // ---------------------------------------------------------------------
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+    private val dataStore = context.dataStore
+
+    // ---------------------------------------------------------------------
+    // Preference keys – typed, so the compiler knows the value type
+    // ---------------------------------------------------------------------
+    private val floatKey  = floatPreferencesKey("float_key")
+    private val stringKey = stringPreferencesKey("string_key")
+    private val longKey   = longPreferencesKey("long_key")
+
+    // ---------------------------------------------------------------------
+    // Float
+    // ---------------------------------------------------------------------
+    suspend fun putFloat(value: Float) {
+        dataStore.edit { it[floatKey] = value }
     }
-    
-    suspend fun getBestChromosome(): Chromosome? {
-        val json = context.dataStore.data.map { it[BEST_CHROMOSOME_JSON] }.first()
-        return json?.let { gson.fromJson(it, Chromosome::class.java) }
+
+    suspend fun getFloat(defaultValue: Float = 0f): Float {
+        return dataStore.data
+            .map { it[floatKey] ?: defaultValue }
+            .first()
     }
-    
-    suspend fun getBestSharpe(): Float = context.dataStore.data.map { it[BEST_SHARPE] ?: -1f }.first()
-    
-    suspend fun getActiveFeatures(): List<String> {
-        val json = context.dataStore.data.map { it[ACTIVE_FEATURES_JSON] }.first()
-        return json?.let { gson.fromJson(it, Array<String>::class.java).toList() } ?: emptyList()
+
+    // ---------------------------------------------------------------------
+    // String
+    // ---------------------------------------------------------------------
+    suspend fun putString(value: String) {
+        dataStore.edit { it[stringKey] = value }
     }
-    
-    suspend fun getLastOptimizationTime(): Long = context.dataStore.data.map { it[LAST_OPTIMIZATION_TIME] ?: 0L }.first()
+
+    suspend fun getString(defaultValue: String = ""): String {
+        return dataStore.data
+            .map { it[stringKey] ?: defaultValue }
+            .first()
+    }
+
+    // ---------------------------------------------------------------------
+    // Long
+    // ---------------------------------------------------------------------
+    suspend fun putLong(value: Long) {
+        dataStore.edit { it[longKey] = value }
+    }
+
+    suspend fun getLong(defaultValue: Long = 0L): Long {
+        return dataStore.data
+            .map { it[longKey] ?: defaultValue }
+            .first()
+    }
 }
