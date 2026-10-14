@@ -2,24 +2,12 @@ package com.udaan.child.optimizer
 
 import com.udaan.child.data.model.Chromosome
 import com.udaan.child.data.model.DailyBar
-import com.udaan.child.data.model.FeatureRegistry   // <-- added
+import com.udaan.child.data.model.FeatureRegistry
 import com.udaan.child.data.model.GAResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.*
 import kotlin.random.Random
-
-/**
- * Very small helper that turns the raw price‑bars into the 14 feature‑vectors
- * expected by the GA.  The real implementation can be far more sophisticated –
- * this stub simply returns zero‑filled arrays so that the optimiser compiles.
- */
-private class FeatureEngine(private val bars: List<DailyBar>) {
-    // 14 features × N bars
-    fun getAllFeatures(): Array<FloatArray> = Array(FeatureRegistry.COUNT) {
-        FloatArray(bars.size) { 0f }
-    }
-}
 
 class GeneticOptimizer(
     private val populationSize: Int = 150,
@@ -71,7 +59,7 @@ class GeneticOptimizer(
     }
 
     // -------------------------------------------------------------------------
-    // Helpers – unchanged logic, only the missing imports were added
+    // Helper functions – unchanged logic, only the missing imports were added
     // -------------------------------------------------------------------------
     private fun randomChromosome(rand: Random): Chromosome {
         val mask = BooleanArray(FeatureRegistry.COUNT) { rand.nextFloat() < 0.4f }
