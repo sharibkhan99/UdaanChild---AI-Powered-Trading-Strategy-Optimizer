@@ -5,7 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.udaan.child.ui.main.MainViewModel
-import com.udaan.child.R                 // <-- adds the generated R class (contains R.layout.activity_main)
+import com.udaan.child.R
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -16,7 +16,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // The layout file must exist at  res/layout/activity_main.xml
+        // CrashHandler ko sabse pehle start karein
+        CrashHandler.init(this)
+
+        // The layout file must exist at res/layout/activity_main.xml
         setContentView(R.layout.activity_main)
 
         // Example: observe the UI‑state coming from the ViewModel
@@ -36,8 +39,5 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
-        // If you have a button that should start the optimisation, wire it here:
-        // findViewById<Button>(R.id.btnStart).setOnClickListener { viewModel.triggerOptimization() }
     }
 }
