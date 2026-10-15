@@ -2,118 +2,70 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    tools:context=".MainActivity">
 
-    <!-- 1. Title -->
+    <!-- Example top‑centered TextView -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="UdaanChild – AI Trading Optimizer"
-        android:textSize="20sp"
+        android:text="@string/app_name"
+        android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="32dp"/>
 
-    <!-- 2. START OPTIMIZATION button -->
+    <!-- Example button centered under the title -->
     <Button
-        android:id="@+id/btnStartOptimization"
+        android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="START OPTIMIZATION"
-        android:textAllCaps="true"
-        android:backgroundTint="#3700B3"
-        android:textColor="@android:color/white"
+        android:text="Start"
+        android:background="?android:attr/selectableItemBackground"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="40dp"/>
-
-    <!-- 3. ProgressBar (hidden until job starts) -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnStartOptimization"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"/>
 
-    <!-- 4. Result TextView (hidden until job finishes) -->
-    <TextView
-        android:id="@+id/tvResult"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textSize="16sp"
-        android:visibility="gone"
-        android:padding="16dp"
-        app:layout_constraintTop_toBottomOf="@id/progressBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp"/>
-
-    <!-- 5. Right-hand vertical icon strip -->
-    <LinearLayout
-        android:id="@+id/iconStrip"
+    <!-- Another button -->
+    <Button
+        android:id="@+id/btnStop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="12dp"
-        app:layout_constraintTop_toTopOf="parent"
+        android:text="Stop"
+        android:background="?android:attr/selectableItemBackground"
+        app:layout_constraintTop_toBottomOf="@id/btnStart"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+    <!-- A third button -->
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:background="?android:attr/selectableItemBackground"
+        app:layout_constraintTop_toBottomOf="@id/btnStop"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+    <!-- Floating‑action‑button‑style view anchored to bottom‑end -->
+    <ImageView
+        android:id="@+id/ivFab"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:src="@android:drawable/ic_menu_add"
+        android:contentDescription="@string/app_name"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Phone / signal -->
-        <ImageButton
-            android:id="@+id/icPhone"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Phone"
-            android:src="@android:drawable/ic_menu_call"
-            android:scaleType="centerInside"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"/>
-
-        <!-- Music note -->
-        <ImageButton
-            android:id="@+id/icMusic"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Music"
-            android:src="@android:drawable/ic_media_play"
-            android:scaleType="centerInside"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"/>
-
-        <!-- Gear / settings -->
-        <ImageButton
-            android:id="@+id/icSettings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences"
-            android:scaleType="centerInside"/>
-
-    </LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="24dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
