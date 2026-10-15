@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.UdaanChild" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">#3700B3</item>
-        <item name="colorPrimaryVariant">#6200EE</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+    <!-- Base application theme – Material 3, no ActionBar -->
+    <style name="Theme.Udaan" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Transparent system bars work well with edge‑to‑edge Compose UI -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <item name="colorSecondary">#03DAC5</item>
-        <item name="colorSecondaryVariant">#018786</item>
-        <item name="colorOnSecondary">#000000</item>
+        <!-- Let the system decide light/dark status‑bar icons -->
+        <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
+        <item name="android:windowLightNavigationBar">?attr/isLightTheme</item>
 
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-    </style>
-
-    <style name="Theme.UdaanChild.NoActionBar" parent="Theme.UdaanChild">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+        <!-- If you want a custom colour palette, uncomment & edit: -->
+        <!--
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        -->
     </style>
 </resources>
