@@ -1,22 +1,30 @@
-// settings.gradle.kts
+// ---------------------------------------------------------------
+// UdaanChild/settings.gradle.kts
+// ---------------------------------------------------------------
 pluginManagement {
-    // Where Gradle looks for the plugins you apply in the root build file
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
     }
-}
-
-dependencyResolutionManagement {
-    // Repositories for **all** modules (app, library, etc.)
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-        // If you ever need a third‑party repo add it here, e.g. maven { url = uri("https://jitpack.io") }
+    // Pin the plugins you use – this also tells Gradle which
+    // versions to resolve without putting them in the root build file.
+    plugins {
+        id("com.android.application") version "8.5.0"
+        id("org.jetbrains.kotlin.android") version "2.0.21"
+        id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     }
 }
 
-rootProject.name = "UdaanChild---AI-Powered-Trading-Strategy-Optimizer"
+// ---------------------------------------------------------------
+// All project repositories – **the only place they may appear**
+// ---------------------------------------------------------------
+repositories {
+    google()
+    mavenCentral()
+}
+
+// ---------------------------------------------------------------
+// Include the app module
+// ---------------------------------------------------------------
 include(":app")
