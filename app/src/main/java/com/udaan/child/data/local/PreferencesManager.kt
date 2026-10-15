@@ -1,56 +1,27 @@
 package com.udaan.child.data.local
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromString
-import kotlinx.serialization.json.encodeToString
-import kotlinx.serialization.serializer
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.udaan.child.data.model.GAResult
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-class PreferencesManager(private val prefs: SharedPreferences) {
+private val Context.dataStore by preferencesDataStore(name = "udaan_prefs")
 
-    private val json = Json { ignoreUnknownKeys = true }
+class PreferencesManager(private val context: Context) {
+    private val BEST_SHARPE = floatPreferencesKey("best_sharpe")
+    private val LAST_OPT_TIME = longPreferencesKey("last_opt_time")
 
-    // -----------------------------------------------------------------
-    // Generic helpers
-    // -----------------------------------------------------------------
-    private fun <T> putObject(key: String, value: T, serializer: kotlinx.serialization.KSerializer<T>) {
-        val encoded = json.encodeToString(serializer, value)
-        prefs.edit().putString(key, encoded).apply()
-    }
-
-    private fun <T> getObject(key: String, serializer: kotlinx.serialization.KSerializer<T>): T? {
-        val string = prefs.getString(key, null) ?: return null
-        return try {
-            json.decodeFromString(serializer, string)
-        } catch (e: Exception) {
-            null
+    suspend fun saveOptimizationResult(result: GAResult) {
+        context.dataStore.edit { prefs ->
+            prefs[BEST_SHARPE] = result.bestSharpe.toFloat()
+            prefs[LAST_OPT_TIME] = System.currentTimeMillis()
         }
     }
 
-    // -----------------------------------------------------------------
-    // Concrete preferences used by the app
-    // -----------------------------------------------------------------
-    companion object {
-        private const val PREFS_NAME = "udaan_prefs"
-        fun create(context: Context): PreferencesManager =
-            PreferencesManager(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE))
-    }
-
-    // Example: user‑id (String)
-    fun setUserId(userId: String?) {
-        if (userId.isNullOrEmpty()) prefs.edit().remove("user_id").apply()
-        else prefs.edit().putString("user_id", userId).apply()
-    }
-
-    fun getUserId(): String? = prefs.getString("user_id", null)
-
-    // Example: a data‑class that is @Serializable
-    fun setLastPortfolio(value: com.udaan.child.data.model.Portfolio?) {
-        if (value == null) prefs.edit().remove("last_portfolio").apply()
-        else putObject("last_portfolio", value, com.udaan.child.data.model.Portfolio.serializer())
-    }
-
-    fun getLastPortfolio(): com.udaan.child.data.model.Portfolio? =
-        getObject("last_portfolio", com.udaan.child.data.model.Portfolio.serializer())
+    fun getBestSharpe(): Flow<Float> = context.dataStore.data.map { it[BEST_SHARPE] ?: 0f }
+    fun getLastOptimizationTime(): Flow<Long> = context.dataStore.data.map { it[LAST_OPT_TIME] ?: 0L }
 }
