@@ -1,74 +1,56 @@
 package com.udaan.child.data.local
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.preferencesDataStore
-import com.udaan.child.data.model.GAResult
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import android.content.SharedPreferences
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromString
+import kotlinx.serialization.json.encodeToString
+import kotlinx.serialization.serializer
 
-/**
- * Thin wrapper around a **Preferences DataStore**.
- * All public functions are suspend – call them from a coroutine scope
- * (viewModelScope, lifecycleScope, …).
- */
-class PreferencesManager(private val context: Context) {
+class PreferencesManager(private val prefs: SharedPreferences) {
 
-    // ---------------------------------------------------------------------
-    // DataStore instance (created once per process)
-    // ---------------------------------------------------------------------
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
-    private val dataStore = context.dataStore
+    private val json = Json { ignoreUnknownKeys = true }
 
-    // ---------------------------------------------------------------------
-    // Preference keys – typed, so the compiler knows the value type
-    // ---------------------------------------------------------------------
-    private val floatKey          = floatPreferencesKey("float_key")
-    private val stringKey         = stringPreferencesKey("string_key")
-    private val longKey           = longPreferencesKey("long_key")
-    private val gaResultKey       = stringPreferencesKey("ga_result_json")   // stores GAResult as JSON
-
-    // ---------------------------------------------------------------------
-    // Simple scalar helpers (already used elsewhere)
-    // ---------------------------------------------------------------------
-    suspend fun putFloat(value: Float) { dataStore.edit { it[floatKey] = value } }
-    suspend fun getFloat(defaultValue: Float = 0f): Float =
-        dataStore.data.map { it[floatKey] ?: defaultValue }.first()
-
-    suspend fun putString(value: String) { dataStore.edit { it[stringKey] = value } }
-    suspend fun getString(defaultValue: String = ""): String =
-        dataStore.data.map { it[stringKey] ?: defaultValue }.first()
-
-    suspend fun putLong(value: Long) { dataStore.edit { it[longKey] = value } }
-    suspend fun getLong(defaultValue: Long = 0L): Long =
-        dataStore.data.map { it[longKey] ?: defaultValue }.first()
-
-    // ---------------------------------------------------------------------
-    // GAResult persistence (JSON ↔️ DataStore)
-    // ---------------------------------------------------------------------
-    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-
-    /** Save the whole optimisation result */
-    suspend fun saveOptimizationResult(result: GAResult) {
-        val jsonString = json.encodeToString(GAResult.serializer(), result)
-        dataStore.edit { it[gaResultKey] = jsonString }
+    // -----------------------------------------------------------------
+    // Generic helpers
+    // -----------------------------------------------------------------
+    private fun <T> putObject(key: String, value: T, serializer: kotlinx.serialization.KSerializer<T>) {
+        val encoded = json.encodeToString(serializer, value)
+        prefs.edit().putString(key, encoded).apply()
     }
 
-    /** Retrieve the last saved optimisation result (or null) */
-    suspend fun getSavedOptimizationResult(): GAResult? {
-        val jsonString = dataStore.data.map { it[gaResultKey] }.first()
-        return if (jsonString.isNullOrBlank()) null
-        else json.decodeFromString(GAResult.serializer(), jsonString)
+    private fun <T> getObject(key: String, serializer: kotlinx.serialization.KSerializer<T>): T? {
+        val string = prefs.getString(key, null) ?: return null
+        return try {
+            json.decodeFromString(serializer, string)
+        } catch (e: Exception) {
+            null
+        }
     }
 
-    // ---------------------------------------------------------------------
-    // Convenience getters used by MainViewModel / Worker
-    // ---------------------------------------------------------------------
-    suspend fun getBestChromosome() = getSavedOptimizationResult()?.bestChromosome
-    suspend fun getBestSharpe()     = getSavedOptimizationResult()?.bestSharpe ?: 0f
-    suspend fun getActiveFeatures() = getSavedOptimizationResult()?.activeFeatures ?: emptyList()
-    suspend fun getLastOptimizationTime() = getSavedOptimizationResult()?.timestamp ?: 0L
+    // -----------------------------------------------------------------
+    // Concrete preferences used by the app
+    // -----------------------------------------------------------------
+    companion object {
+        private const val PREFS_NAME = "udaan_prefs"
+        fun create(context: Context): PreferencesManager =
+            PreferencesManager(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE))
+    }
+
+    // Example: user‑id (String)
+    fun setUserId(userId: String?) {
+        if (userId.isNullOrEmpty()) prefs.edit().remove("user_id").apply()
+        else prefs.edit().putString("user_id", userId).apply()
+    }
+
+    fun getUserId(): String? = prefs.getString("user_id", null)
+
+    // Example: a data‑class that is @Serializable
+    fun setLastPortfolio(value: com.udaan.child.data.model.Portfolio?) {
+        if (value == null) prefs.edit().remove("last_portfolio").apply()
+        else putObject("last_portfolio", value, com.udaan.child.data.model.Portfolio.serializer())
+    }
+
+    fun getLastPortfolio(): com.udaan.child.data.model.Portfolio? =
+        getObject("last_portfolio", com.udaan.child.data.model.Portfolio.serializer())
 }
