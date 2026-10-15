@@ -7,8 +7,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-    // Pin the plugins you use – this also tells Gradle which
-    // versions to resolve without putting them in the root build file.
+    // Pin the exact plugin versions – the module will just `apply` them
     plugins {
         id("com.android.application") version "8.5.0"
         id("org.jetbrains.kotlin.android") version "2.0.21"
@@ -16,15 +15,11 @@ pluginManagement {
     }
 }
 
-// ---------------------------------------------------------------
-// All project repositories – **the only place they may appear**
-// ---------------------------------------------------------------
+// All **artifact** repositories for every sub‑project
 repositories {
     google()
     mavenCentral()
 }
 
-// ---------------------------------------------------------------
 // Include the app module
-// ---------------------------------------------------------------
 include(":app")
