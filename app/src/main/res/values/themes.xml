@@ -1,12 +1,9 @@
+<!-- res/values/themes.xml -->
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Simple platform theme – works without any extra library -->
     <style name="Theme.Udaan" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Transparent system bars (good for edge‑to‑edge Compose UI) -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-
-        <!-- Light‑status‑bar icons (set to false if you prefer dark icons) -->
         <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>
