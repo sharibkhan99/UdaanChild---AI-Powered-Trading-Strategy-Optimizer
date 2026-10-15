@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------
-// app/build.gradle.kts
+// UdaanChild/app/build.gradle.kts
 // ---------------------------------------------------------------
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization")   // for @Serializable data classes
+    id("com.android.application")                 // <-- applies the Android plugin
+    id("org.jetbrains.kotlin.plugin.serialization") // <-- only serialization plugin
+    // NOTE: **NO** `id("org.jetbrains.kotlin.android")` here!
 }
 
 android {
@@ -18,9 +18,11 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // ---- expose Dhan credentials to BuildConfig (keep them out of source control) ----
-        buildConfigField("String", "DHAN_CLIENT_ID", "\"${project.findProperty("DHAN_CLIENT_ID") ?: ""}\"")
-        buildConfigField("String", "DHAN_ACCESS_TOKEN", "\"${project.findProperty("DHAN_ACCESS_TOKEN") ?: ""}\"")
+        // Expose Dhan credentials to BuildConfig (read from gradle.properties)
+        buildConfigField("String", "DHAN_CLIENT_ID",
+                "\"${project.findProperty("DHAN_CLIENT_ID") ?: ""}\"")
+        buildConfigField("String", "DHAN_ACCESS_TOKEN",
+                "\"${project.findProperty("DHAN_ACCESS_TOKEN") ?: ""}\"")
     }
 
     buildTypes {
@@ -38,13 +40,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Modern replacement for the deprecated `kotlinOptions { jvmTarget = "17" }`
+    // Modern way to request a Java 17 toolchain (no more kotlinOptions.jvmTarget)
     kotlin {
         jvmToolchain(17)
     }
-
-    // Enable ViewBinding / DataBinding if you use them
-    // viewBinding { enable = true }
 }
 
 dependencies {
@@ -64,14 +63,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // -------------------- DhanHQ SDK (live market data) --------------------
-    // Official Maven artifact – check https://github.com/dhanhq/dhanhq-java-sdk for the latest version
     implementation("com.dhanhq:dhanhq-sdk:1.0.4")
 
-    // -------------------- Math (matrix exponential for the calculus forecast) --------------------
+    // -------------------- Math (matrix exponential) --------------------
     implementation("org.apache.commons:commons-math3:3.6.1")
-
-    // -------------------- (optional) Retrofit / OkHttp if you call other REST APIs --------------------
-    // implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    // implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
-    // implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 }
