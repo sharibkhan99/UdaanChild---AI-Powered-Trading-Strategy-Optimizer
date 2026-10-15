@@ -1,10 +1,6 @@
 // ---------------------------------------------------------------
-// UdaanChild/build.gradle.kts   (project / root)
+// UdaanChild/build.gradle.kts   (root)
 // ---------------------------------------------------------------
-// No `buildscript { repositories { … } }` any more.
-// No `allprojects { repositories { … } }` any more.
-// The only thing that stays is the clean‑up block you may need
-// (e.g. `clean { delete(rootProject.buildDir) }`).
-
-// If you have any common configuration that must run for every
-// sub‑project you can keep it here, but **do not add repositories**.
+// Intentionally left empty – all plugin & repository config lives in settings.gradle.kts
+// You may keep a `clean` task here if you like, e.g.:
+// tasks.register("clean", Delete::class) { delete(rootProject.buildDir) }
