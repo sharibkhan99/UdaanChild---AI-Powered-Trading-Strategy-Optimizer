@@ -2,71 +2,62 @@ package com.udaan.child
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.io.OutputStream
-import java.io.PrintWriter
-import java.io.StringWriter
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.system.exitProcess
 
-class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandler {
+object CrashHandler : Thread.UncaughtExceptionHandler {
 
-    private val defaultHandler: Thread.UncaughtExceptionHandler? =
-        Thread.getDefaultUncaughtExceptionHandler()
+    private var defaultHandler: Thread.UncaughtExceptionHandler? = null
+    private lateinit var appContext: Context
 
-    companion object {
-        fun init(context: Context) {
-            Thread.setDefaultUncaughtExceptionHandler(CrashHandler(context.applicationContext))
-        }
+    fun init(context: Context) {
+        appContext = context.applicationContext
+        defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(this)
     }
 
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
-        val sw = StringWriter()
-        val pw = PrintWriter(sw)
-        throwable.printStackTrace(pw)
+        val stackTrace = throwable.stackTraceToString()
+        
+        // Crash ko server par synchronous ya background thread mein bhejte hain
+        sendCrashToServerSync(stackTrace)
 
-        val stackTrace = "App: com.udaan.child\n" +
-                "Android Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n" +
-                "Model: ${Build.MANUFACTURER} ${Build.MODEL}\n\n" +
-                sw.toString()
+        // Phir default handler ko call karte hain taaki app properly close ho
+        defaultHandler?.uncaughtException(thread, throwable) ?: exitProcess(1)
+    }
 
-        val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
-
-        val sendThread = Thread {
-            try {
-                val url = URL("http://139.59.12.88:3000/api/crash")
-                val conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json; utf-8")
-                conn.connectTimeout = 5000
-                conn.doOutput = true
-
-                val json = JSONObject().apply {
-                    put("deviceName", deviceName)
-                    put("error", stackTrace)
-                }
-
-                conn.outputStream.use { os: OutputStream ->
-                    val input = json.toString().toByteArray(Charsets.UTF_8)
-                    os.write(input, 0, input.size)
-                }
-                conn.responseCode
-                conn.disconnect()
-            } catch ( ignored: Exception) {
-            }
-        }
-
-        sendThread.start()
+    private fun sendCrashToServerSync(errorDetails: String) {
         try {
-            sendThread.join(2000)
-        } catch (ignored: InterruptedException) {
-        }
+            val url = URL("http://139.59.12.88:3000/api/crash")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                doOutput = true
+                connectTimeout = 3000
+                readTimeout = 3000
+            }
 
-        if (defaultHandler != null) {
-            defaultHandler.uncaughtException(thread, throwable)
-        } else {
-            exitProcess(1)
+            val payload = JSONObject().apply {
+                put("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
+                put("error", errorDetails)
+            }
+
+            OutputStreamWriter(conn.outputStream, "UTF-8").use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            conn.responseCode // Request trigger karne ke liye zaroori hai
+            conn.disconnect()
+        } catch (e: Exception) {
+            Log.e("CrashHandler", "Failed to send crash log to server", e)
         }
     }
 }
