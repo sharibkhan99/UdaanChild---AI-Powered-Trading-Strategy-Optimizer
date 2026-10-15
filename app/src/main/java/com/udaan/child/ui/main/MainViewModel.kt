@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.TimeUnit
 
-class MainViewModel(
+class MainViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
     private val prefs: PreferencesManager = PreferencesManager(application)
