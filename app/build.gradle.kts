@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------
 plugins {
     id("com.android.application")
-    // Only the serialization plugin is needed explicitly – the Android
+    // Only the serialization plugin is required explicitly – the Android
     // plugin now ships its own Kotlin compiler (android.builtInKotlin=true).
     id("org.jetbrains.kotlin.plugin.serialization")
 }
