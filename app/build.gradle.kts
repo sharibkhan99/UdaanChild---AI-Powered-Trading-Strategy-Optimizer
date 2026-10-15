@@ -3,9 +3,9 @@
 // ---------------------------------------------------------------
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.plugin.serialization")   // <-- only this Kotlin plugin
-    // NOTE: NO `id("org.jetbrains.kotlin.android")` here because
-    // `android.builtInKotlin=true` (see gradle.properties) supplies it.
+    // Only the serialization plugin is needed explicitly – the Android
+    // plugin now ships its own Kotlin compiler (android.builtInKotlin=true).
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -19,11 +19,21 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Dhan credentials are injected from gradle.properties
-        buildConfigField("String", "DHAN_CLIENT_ID",
-                "\"${project.findProperty(\"DHAN_CLIENT_ID\") ?: \"\"}\"")
-        buildConfigField("String", "DHAN_ACCESS_TOKEN",
-                "\"${project.findProperty(\"DHAN_ACCESS_TOKEN\") ?: \"\"}\"")
+        // -----------------------------------------------------------
+        // DhanHQ credentials – injected from gradle.properties.
+        // The value that reaches BuildConfig must be a *string literal*
+        // (including the surrounding quotes), therefore we escape them.
+        // -----------------------------------------------------------
+        buildConfigField(
+            "String",
+            "DHAN_CLIENT_ID",
+            "\"${project.findProperty(\"DHAN_CLIENT_ID\") ?: \"\"}\""
+        )
+        buildConfigField(
+            "String",
+            "DHAN_ACCESS_TOKEN",
+            "\"${project.findProperty(\"DHAN_ACCESS_TOKEN\") ?: \"\"}\""
+        )
     }
 
     buildTypes {
@@ -41,13 +51,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Use the toolchain API instead of the deprecated kotlinOptions.jvmTarget
     kotlin {
-        jvmToolchain(17)          // replaces the old kotlinOptions.jvmTarget
+        jvmToolchain(17)
     }
 }
 
 dependencies {
-    // AndroidX / Jetpack
+    // -------------------- AndroidX / Jetpack --------------------
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -57,14 +68,14 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Kotlin std‑lib & Coroutines
+    // -------------------- Kotlin std‑lib & Coroutines --------------------
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    // DhanHQ SDK (live market data)
+    // -------------------- DhanHQ SDK (live market data) --------------------
     implementation("com.dhanhq:dhanhq-sdk:1.0.4")
 
-    // Math – matrix exponential for the calculus forecast
+    // -------------------- Math – matrix exponential --------------------
     implementation("org.apache.commons:commons-math3:3.6.1")
 }
