@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        The directory where your CallRecordingService writes the audio files.
+        Adjust the path if you store recordings elsewhere.
+    -->
+    <files-path
+        name="recordings"
+        path="recordings/" />
+
+    <!-- If you also need to share cache files, uncomment the next line -->
+    <!-- <cache-path name="cache" path="/" /> -->
+</paths>
