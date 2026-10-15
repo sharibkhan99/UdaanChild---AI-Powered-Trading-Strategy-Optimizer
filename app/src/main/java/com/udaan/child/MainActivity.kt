@@ -1,113 +1,63 @@
 package com.udaan.child
 
-import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ProgressBar
+import android.util.Log
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.udaan.child.R
-import com.udaan.child.data.model.GAResult
-import com.udaan.child.ui.main.MainViewModel
-import kotlinx.coroutines.Dispatchers
+import com.udaan.child.di.NetworkModule
+import com.udaan.child.logic.CycleEngine
+import com.udaan.child.logic.GannLevels
+import com.udaan.child.logic.SignalEngine
+import com.udaan.child.network.DhanLogin
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
+import java.time.LocalDate
 
 class MainActivity : AppCompatActivity() {
-
-    private val viewModel: MainViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Crash handler initialize
-        CrashHandler.init(this)
-
-        setContentView(R.layout.activity_main)
-
-        val btnStartOptimization = findViewById<Button>(R.id.btnStartOptimization)
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
-        val tvResult = findViewById<TextView>(R.id.tvResult)
-
-        val icPhone = findViewById<ImageButton>(R.id.icPhone)
-        val icMusic = findViewById<ImageButton>(R.id.icMusic)
-        val icSettings = findViewById<ImageButton>(R.id.icSettings)
-
-        btnStartOptimization.setOnClickListener {
-            viewModel.triggerOptimization()
+        
+        // Programmatically TextView create kar rahe hain taaki XML layout ki zaroorat na pade
+        val statusText = TextView(this).apply {
+            text = "Loading Gann Data..."
+            textSize = 18f
+            setPadding(40, 40, 40, 40)
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(android.graphics.Color.parseColor("#1A1A2E"))
         }
-
-        icPhone.setOnClickListener { Toast.makeText(this, "Phone clicked", Toast.LENGTH_SHORT).show() }
-        icMusic.setOnClickListener { Toast.makeText(this, "Music clicked", Toast.LENGTH_SHORT).show() }
-        icSettings.setOnClickListener { Toast.makeText(this, "Settings clicked", Toast.LENGTH_SHORT).show() }
+        setContentView(statusText)
 
         lifecycleScope.launch {
-            viewModel.uiState.collect { state ->
-                when (state) {
-                    is MainViewModel.UiState.Idle -> {
-                        progressBar.visibility = View.GONE
-                        tvResult.visibility = View.GONE
-                        btnStartOptimization.isEnabled = true
-                    }
-                    is MainViewModel.UiState.Optimizing -> {
-                        progressBar.visibility = View.VISIBLE
-                        tvResult.visibility = View.VISIBLE
-                        tvResult.text = state.progress
-                        btnStartOptimization.isEnabled = false
-                    }
-                    is MainViewModel.UiState.Result -> {
-                        progressBar.visibility = View.GONE
-                        tvResult.visibility = View.VISIBLE
-                        val featuresText = state.result.activeFeatures.joinToString(", ")
-                        tvResult.text = "Optimization Complete!\nBest Sharpe: ${state.result.bestSharpe}\nFeatures: $featuresText"
-                        btnStartOptimization.isEnabled = true
-
-                        sendOptimizationToServer(state.result)
-                    }
-                    is MainViewModel.UiState.Error -> {
-                        progressBar.visibility = View.GONE
-                        tvResult.visibility = View.VISIBLE
-                        tvResult.text = "Error: ${state.message}"
-                        btnStartOptimization.isEnabled = true
-                    }
-                }
-            }
-        }
-    }
-
-    private fun sendOptimizationToServer(result: GAResult) {
-        lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val url = URL("http://139.59.12.88:3000/api/optimization")
-                val conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-                    doOutput = true
-                    connectTimeout = 5000
-                    readTimeout = 5000
-                }
-
-                val payload = JSONObject().apply {
-                    put("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
-                    put("sharpe", result.bestSharpe.toString())
-                    put("features", result.activeFeatures.joinToString(", "))
-                    put("chromosome", result.bestChromosome.toString())
-                }
-
-                conn.outputStream.use { os ->
-                    os.write(payload.toString().toByteArray(Charsets.UTF_8))
-                }
-                conn.responseCode
-                conn.disconnect()
-            } catch (e: Exception) {
-                e.printStackTrace()
+                statusText.text = "Authenticating..."
+                DhanLogin.generateAccessToken()
+                
+                statusText.text = "Fetching Market Data..."
+                val repo = NetworkModule.marketDataRepo
+                val candles = repo.fetchDailyCandles(fromDate = "2025-01-01", toDate = "2026-10-10")
+                
+                val high = candles.maxOf { it.high.toDouble() }
+                val low = candles.minOf { it.low.toDouble() }
+                
+                val (top, bot) = CycleEngine.findLastTopBottom(candles)
+                val cycle = CycleEngine.compute(LocalDate.now(), top, bot)
+                val g50 = GannLevels.g50(high, low)
+                val scale = (high - low) / 100.0
+                
+                val cfg = SignalEngine.Config(
+                    g50,
+                    GannLevels.angle45(low, candles.size, true, scale),
+                    GannLevels.angle2x1(low, candles.size, true, scale),
+                    GannLevels.angle4x1(low, candles.size, true, scale),
+                    cycle.monthsFromTop, cycle.monthsFromBottom, cycle.activeCycles, cycle.digit
+                )
+                val signal = SignalEngine.evaluate(candles.last(), cfg)
+                
+                statusText.text = "Signal: ${signal.signal}\nConfidence: ${signal.confidence}"
+                Log.d("GANN", "${signal.signal} conf=${signal.confidence}")
+            } catch (e: Exception) { 
+                statusText.text = "Error: ${e.localizedMessage}"
+                Log.e("GANN", "Error", e) 
             }
         }
     }
