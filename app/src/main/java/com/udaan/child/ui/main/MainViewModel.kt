@@ -13,15 +13,15 @@ import com.udaan.child.data.repository.MarketDataRepository
 import com.udaan.child.data.repository.MarketDataRepositoryImpl
 import com.udaan.child.optimizer.GeneticOptimizer
 import com.udaan.child.worker.OptimizationWorker
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class MainViewModel @JvmOverloads constructor(
     application: Application,
     private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
-    private val prefs: PreferencesManager = PreferencesManager(application)
+    private val prefs: PreferencesManager = PreferencesManager()
 ) : AndroidViewModel(application) {
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Idle)
@@ -34,7 +34,6 @@ class MainViewModel @JvmOverloads constructor(
         object Idle : UiState
     }
 
-    /** Starts a foreground optimisation run. */
     fun triggerOptimization(symbol: String = "NIFTY") {
         viewModelScope.launch {
             _uiState.value = UiState.Optimizing("Fetching data…")
@@ -49,8 +48,6 @@ class MainViewModel @JvmOverloads constructor(
                 val optimizer = GeneticOptimizer()
                 val result = optimizer.optimize(bars)
 
-                prefs.saveOptimizationResult(result)
-
                 _uiState.value = UiState.Result(result)
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Optimization failed", e)
@@ -59,7 +56,6 @@ class MainViewModel @JvmOverloads constructor(
         }
     }
 
-    /** Schedules a one‑shot background optimisation via WorkManager. */
     fun scheduleBackgroundOptimization(symbol: String = "NIFTY") {
         val work = OneTimeWorkRequestBuilder<OptimizationWorker>()
             .setInputData(
@@ -76,14 +72,5 @@ class MainViewModel @JvmOverloads constructor(
                 ExistingWorkPolicy.REPLACE,
                 work
             )
-    }
-
-    /** Loads a previously saved optimisation result (if any). */
-    suspend fun loadSavedResult(): GAResult? {
-        val chromo = prefs.getBestChromosome() ?: return null
-        val sharpe = prefs.getBestSharpe()
-        val features = prefs.getActiveFeatures()
-        val timestamp = prefs.getLastOptimizationTime()
-        return GAResult(chromo, sharpe, features, emptyList(), timestamp)
     }
 }
