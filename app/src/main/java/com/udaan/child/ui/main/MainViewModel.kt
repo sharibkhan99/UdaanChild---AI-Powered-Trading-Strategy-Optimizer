@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 class MainViewModel @JvmOverloads constructor(
     application: Application,
-    private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
+    private val repository: MarketDataRepository = MarketDataRepositoryImpl(),
     private val prefs: PreferencesManager = PreferencesManager()
 ) : AndroidViewModel(application) {
 
@@ -66,7 +66,7 @@ class MainViewModel @JvmOverloads constructor(
             .setInitialDelay(1, TimeUnit.MINUTES)
             .build()
 
-WorkManager.getInstance(getApplication())
+        WorkManager.getInstance(getApplication())
             .enqueueUniqueWork(
                 OptimizationWorker.WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
