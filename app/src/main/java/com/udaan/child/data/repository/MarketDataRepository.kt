@@ -1,8 +1,14 @@
-DailyBar(
-    date = cols[0],
-    open = cols[1].toDouble(),
-    high = cols[2].toDouble(),
-    low = cols[3].toDouble(),
-    close = cols[4].toDouble(),
-    volume = cols[5].toLong()
-)
+package com.udaan.child.data.repository
+
+import com.udaan.child.data.model.DailyBar
+
+interface MarketDataRepository {
+    suspend fun getHistoricalData(symbol: String): List<DailyBar>
+}
+
+class MarketDataRepositoryImpl : MarketDataRepository {
+    override suspend fun getHistoricalData(symbol: String): List<DailyBar> {
+        // Stub — replace with real data fetch
+        return emptyList()
+    }
+}
