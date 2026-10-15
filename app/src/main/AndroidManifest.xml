@@ -11,11 +11,12 @@
         android:allowBackup="true"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <!-- Main launcher activity – must be exported on API 31+ -->
+        <!-- Main launcher activity -->
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
@@ -23,8 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Add other activities / services / receivers here, each with android:exported explicitly set -->
 
     </application>
 </manifest>
