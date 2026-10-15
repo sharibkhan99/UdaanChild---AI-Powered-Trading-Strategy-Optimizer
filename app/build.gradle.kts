@@ -1,20 +1,36 @@
+// ---------------------------------------------------------------
+// UdaanChild/app/build.gradle.kts
+// ---------------------------------------------------------------
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    // Kotlin‑serialization (still needed for your data classes)
+    id("org.jetbrains.kotlin.plugin.serialization")
+    // **Compose‑Compiler plugin – required from Kotlin 2.0 onward**
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 android {
     namespace = "com.udaan.child"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.udaan.child"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = 24
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // DhanHQ credentials – injected from gradle.properties
+        buildConfigField(
+            "String",
+            "DHAN_CLIENT_ID",
+            "\"${project.findProperty(\"DHAN_CLIENT_ID\") ?: \"\"}\""
+        )
+        buildConfigField(
+            "String",
+            "DHAN_ACCESS_TOKEN",
+            "\"${project.findProperty(\"DHAN_ACCESS_TOKEN\") ?: \"\"}\""
+        )
     }
 
     buildTypes {
@@ -32,52 +48,46 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // Use the toolchain API (replaces deprecated kotlinOptions.jvmTarget)
+    kotlin {
+        jvmToolchain(17)
     }
 
-    buildFeatures {
-        compose = true
-    }
-
+    // Compose options (optional but typical)
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "2.0.21"   // matches Kotlin 2.0.21
     }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
-
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-compose:1.9.3")
-
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-
-    // DataStore
+    // -------------------- AndroidX / Jetpack --------------------
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.activity:activity-ktx:1.9.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    // -------------------- Jetpack Compose (UI) --------------------
+    // Adjust versions if you use a newer Compose BOM
+    val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    implementation(composeBom)
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    // -------------------- Kotlin std‑lib & Coroutines --------------------
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // -------------------- DhanHQ SDK (live market data) --------------------
+    implementation("com.dhanhq:dhanhq-sdk:1.0.4")
 
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    // -------------------- Math – matrix exponential --------------------
+    implementation("org.apache.commons:commons-math3:3.6.1")
 }
