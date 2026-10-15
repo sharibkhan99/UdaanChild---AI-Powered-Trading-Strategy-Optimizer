@@ -66,7 +66,7 @@ class MainViewModel @JvmOverloads constructor(
             .setInitialDelay(1, TimeUnit.MINUTES)
             .build()
 
-        WorkManager.getInstance(getApplication())
+WorkManager.getInstance(getApplication())
             .enqueueUniqueWork(
                 OptimizationWorker.WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
