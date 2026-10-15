@@ -4,87 +4,77 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.ExistingWorkPolicy
-import com.udaan.child.data.local.PreferencesManager
-import com.udaan.child.data.model.GAResult
-import com.udaan.child.data.repository.MarketDataRepository
-import com.udaan.child.data.repository.MarketDataRepositoryImpl
-import com.udaan.child.optimizer.GeneticOptimizer
-import com.udaan.child.worker.OptimizationWorker
-import kotlinx.coroutines.launch
+import com.udaan.child.forecast.DhanRepository
+import com.udaan.child.forecast.ForecastEngine
+import com.udaan.child.forecast.ForecastUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 class MainViewModel @JvmOverloads constructor(
     application: Application,
-    private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
-    private val prefs: PreferencesManager = PreferencesManager(application)
+    // The use‑case hides all the repository / engine wiring.
+    private val forecastUseCase: ForecastUseCase = ForecastUseCase()
 ) : AndroidViewModel(application) {
 
-    // Explicit generic type prevents the “Idle‑only” inference problem.
-    private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Idle)
-    val uiState = _uiState.asStateFlow()
-
+    // -----------------------------------------------------------------
+    // UI‑state definition – only what the new screen needs.
+    // -----------------------------------------------------------------
     sealed interface UiState {
-        data class Optimizing(val progress: String) : UiState
-        data class Result(val result: GAResult) : UiState
+        data class Loading(val message: String) : UiState
+        data class ForecastReady(
+            val forecasts: Map<DhanRepository.Granularity, ForecastEngine.ForecastResult>
+        ) : UiState
         data class Error(val message: String) : UiState
         object Idle : UiState
     }
 
-    /** Starts a foreground optimisation run. */
-    fun triggerOptimization(symbol: String = "NIFTY") {
-        viewModelScope.launch {
-            _uiState.value = UiState.Optimizing("Fetching data…")
+    private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
+    val uiState = _uiState.asStateFlow()
+
+    // -----------------------------------------------------------------
+    // Public API – called from the Activity / Fragment when the user
+    // presses **START OPTIMIZATION** (or any other trigger you like).
+    // -----------------------------------------------------------------
+    fun loadForecasts(securityId: String = "1333",   // Nifty‑50 default
+                      exchange: String = "NSE",
+                      horizonDays: Int = 5) {
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = UiState.Loading("Fetching live candles…")
             try {
-                val bars = repository.getHistoricalData(symbol)
-                if (bars.size < 500) {
-                    _uiState.value = UiState.Error("Insufficient data (need 500+ bars)")
-                    return@launch
-                }
+                // One call – it internally hits Dhan for **all six granularities**
+                // and runs the continuous‑time Kalman forecast for each.
+                val resultMap = forecastUseCase.getAllForecasts(
+                    securityId = securityId,
+                    exchange   = exchange,
+                    horizonDays = horizonDays
+                )
 
-                _uiState.value = UiState.Optimizing("Running Genetic Algorithm…")
-                val optimizer = GeneticOptimizer()
-                val result = optimizer.optimize(bars)
+                // Success – push the map to the UI layer.
+                _uiState.value = UiState.ForecastReady(resultMap)
 
-                prefs.saveOptimizationResult(result)
-
-                _uiState.value = UiState.Result(result)
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Optimization failed", e)
+                Log.e("MainViewModel", "Forecast failed", e)
                 _uiState.value = UiState.Error(e.message ?: "Unknown error")
             }
         }
     }
 
-    /** Schedules a one‑shot background optimisation via WorkManager. */
-    fun scheduleBackgroundOptimization(symbol: String = "NIFTY") {
-        val work = OneTimeWorkRequestBuilder<OptimizationWorker>()
-            .setInputData(
-                androidx.work.Data.Builder()
-                    .putString(OptimizationWorker.KEY_SYMBOL, symbol)
-                    .build()
-            )
-            .setInitialDelay(1, TimeUnit.MINUTES)
-            .build()
-
-        WorkManager.getInstance(getApplication())
-            .enqueueUniqueWork(
-                OptimizationWorker.WORK_NAME,
-                ExistingWorkPolicy.REPLACE,
-                work
-            )
-    }
-
-    /** Loads a previously saved optimisation result (if any). */
-    suspend fun loadSavedResult(): GAResult? {
-        val chromo = prefs.getBestChromosome() ?: return null
-        val sharpe = prefs.getBestSharpe()
-        val features = prefs.getActiveFeatures()
-        val timestamp = prefs.getLastOptimizationTime()
-        return GAResult(chromo, sharpe, features, emptyList(), timestamp)
+    // -----------------------------------------------------------------
+    // (Optional) If you still want a background‑worker entry point you can
+    // keep a thin wrapper – the heavy lifting is already in the use‑case.
+    // -----------------------------------------------------------------
+    fun scheduleBackgroundForecast(
+        securityId: String = "1333",
+        exchange: String = "NSE",
+        horizonDays: Int = 5
+    ) {
+        // You can enqueue a WorkManager job that simply calls
+        // `forecastUseCase.getAllForecasts(...)` and posts the result
+        // via a local broadcast / Room / DataStore if you need persistence.
+        // Implementation left out because the current UI‑flow is synchronous
+        // and runs on the viewModelScope.
     }
 }
