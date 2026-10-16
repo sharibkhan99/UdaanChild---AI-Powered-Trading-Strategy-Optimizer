@@ -1,6 +1,8 @@
 package com.udaan.child.data.repository
 
 import com.udaan.child.data.model.Instrument
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -9,32 +11,31 @@ object InstrumentRepository {
     private val client = OkHttpClient()
     private var cached: List<Instrument> = emptyList()
 
-    fun load(): List<Instrument> {
-        if (cached.isNotEmpty()) return cached
-        return try {
-            val req = Request.Builder().url(CSV_URL).build()
-            client.newCall(req).execute().use { resp ->
-                val text = resp.body?.string() ?: return emptyList()
-                cached = text.lines().drop(1).mapNotNull { line ->
-                    val cols = line.split(",")
-                    if (cols.size < 8) return@mapNotNull null
-                    val segment = cols.getOrNull(1)?.trim() ?: ""
-                    if (segment != "NSE_EQ" && segment != "IDX_I") return@mapNotNull null
-                    Instrument(
-                        securityId = cols[0].trim(),
-                        tradingSymbol = cols.getOrNull(5)?.trim() ?: "",
-                        displayName = cols.getOrNull(7)?.trim() ?: "",
-                        exchangeSegment = segment,
-                        instrument = cols.getOrNull(4)?.trim() ?: ""
-                    )
-                }
-                cached
+    suspend fun load() = withContext(Dispatchers.IO) {
+        if (cached.isNotEmpty()) return@withContext
+        try {
+            val resp = client.newCall(Request.Builder().url(CSV_URL).build()).execute()
+            val text = resp.body?.string() ?: return@withContext
+            cached = text.lines().drop(1).mapNotNull { line ->
+                val c = line.split(",")
+                if (c.size < 14) return@mapNotNull null
+                Instrument(
+                    securityId = c[0].trim(),
+                    exchangeSegment = c[1].trim(),
+                    instrument = c[2].trim(),
+                    tradingSymbol = c[5].trim(),
+                    displayName = c[5].trim()
+                )
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        } catch (_: Exception) {}
     }
 
-    fun find(symbol: String): Instrument? =
-        load().find { it.tradingSymbol.equals(symbol, true) }
+    fun find(query: String): Instrument? {
+        val q = query.uppercase().trim()
+        return cached.find { 
+            it.tradingSymbol.equals(q, true) || 
+            it.displayName.equals(q, true) ||
+            it.tradingSymbol.startsWith(q, true)
+        }
+    }
 }
