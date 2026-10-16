@@ -33,6 +33,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Udaan"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <!-- Main Activity -->
@@ -65,24 +66,6 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
-
-        <!--
-            FileProvider – **only keep this block if you have added
-            `res/xml/file_paths.xml`**.  If the file does not exist yet,
-            comment the whole <provider>…</provider> section out (as shown
-            below) to avoid the "resource xml/file_paths not found" error.
-        -->
-        <!--
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-        -->
 
     </application>
 </manifest>
