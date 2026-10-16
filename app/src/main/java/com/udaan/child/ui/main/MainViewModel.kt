@@ -4,8 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.udaan.child.data.model.DailyBar
+import com.udaan.child.data.repository.InstrumentRepository
 import com.udaan.child.forecast.DhanRepository
 import com.udaan.child.forecast.ForecastEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,11 +23,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _reversalsText = MutableStateFlow("")
     val reversalsText: StateFlow<String> = _reversalsText.asStateFlow()
 
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            InstrumentRepository.load()
+        }
+    }
+
     fun runAnalysis(clientId: String, token: String, symbol: String, timeframe: String, asOfDate: String) {
         viewModelScope.launch {
             _resultText.value = "Fetching $timeframe data..."
             try {
-                val bars = dhanRepo.fetchCandles(clientId, token, symbol, timeframe, asOfDate)
+                val bars = dhanRepo.fetchCandles(token, symbol, timeframe, asOfDate)
                 if (bars.isEmpty()) {
                     _resultText.value = "No data returned"
                     return@launch
