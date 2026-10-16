@@ -41,10 +41,15 @@ class MainActivity : AppCompatActivity() {
                     return@launch
                 }
                 
+                // Explicit Double conversion to avoid any BigDecimal ambiguity
                 val high = candles.maxOf { it.high.toDouble() }
                 val low = candles.minOf { it.low.toDouble() }
                 
-                val (top, bot) = CycleEngine.findLastTopBottom(candles)
+                // Avoid destructuring ambiguity by accessing object properties or safe calls
+                val topBottom = CycleEngine.findLastTopBottom(candles)
+                val top = topBottom.first.toDouble()
+                val bot = topBottom.second.toDouble()
+
                 val cycle = CycleEngine.compute(LocalDate.now(), top, bot)
                 val g50 = GannLevels.g50(high, low)
                 val scale = if ((high - low) > 0.0) (high - low) / 100.0 else 1.0
