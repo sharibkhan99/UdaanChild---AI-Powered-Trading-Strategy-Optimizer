@@ -36,12 +36,28 @@ class MainActivity : ComponentActivity() {
                 var selectedTime by remember { mutableStateOf(LocalTime.now()) }
 
                 Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(value = clientId, onValueChange = { clientId = it }, label = { Text("Client ID") })
-                    OutlinedTextField(value = token, onValueChange = { token = it }, label = { Text("Token") })
-                    OutlinedTextField(value = symbol, onValueChange = { symbol = it }, label = { Text("Symbol") })
-                    OutlinedTextField(value = timeframe, onValueChange = { timeframe = it }, label = { Text("Timeframe") })
-                    Text(text = "Date: $selectedDate")
-                    Text(text = "Time: $selectedTime")
+                    OutlinedTextField(
+                        value = clientId,
+                        onValueChange = { clientId = it },
+                        label = { Text("Client ID") }
+                    )
+                    OutlinedTextField(
+                        value = token,
+                        onValueChange = { token = it },
+                        label = { Text("Token") }
+                    )
+                    OutlinedTextField(
+                        value = symbol,
+                        onValueChange = { symbol = it },
+                        label = { Text("Symbol") }
+                    )
+                    OutlinedTextField(
+                        value = timeframe,
+                        onValueChange = { timeframe = it },
+                        label = { Text("Timeframe") }
+                    )
+                    Text(text = "Date: " + selectedDate.toString())
+                    Text(text = "Time: " + selectedTime.toString())
 
                     Button(onClick = {
                         val dt = selectedDate.toString() + "T" + selectedTime.toString()
