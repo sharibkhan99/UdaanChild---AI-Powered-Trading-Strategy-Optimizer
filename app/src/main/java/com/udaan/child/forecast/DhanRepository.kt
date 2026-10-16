@@ -2,6 +2,8 @@ package com.udaan.child.forecast
 
 import com.udaan.child.CrashHandler
 import com.udaan.child.data.model.DailyBar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,7 +19,7 @@ class DhanRepository {
         symbol: String,
         timeframe: String,
         asOfDate: String
-    ): List<DailyBar> {
+    ): List<DailyBar> = withContext(Dispatchers.IO) {
         CrashHandler.sendLog("START symbol=$symbol tf=$timeframe")
 
         val jsonBody = JSONObject().apply {
@@ -36,14 +38,14 @@ class DhanRepository {
             .post(jsonBody.toRequestBody(JSON))
             .build()
 
-        return try {
+        try {
             val resp = client.newCall(request).execute()
             val text = resp.body?.string() ?: ""
             CrashHandler.sendLog("RESP " + resp.code + ": " + text.take(400))
 
-            if (!resp.isSuccessful) return emptyList()
+            if (!resp.isSuccessful) return@withContext emptyList()
             val json = JSONObject(text)
-            val close = json.optJSONArray("close") ?: return emptyList()
+            val close = json.optJSONArray("close") ?: return@withContext emptyList()
             (0 until close.length()).map { i ->
                 DailyBar("", 0.0, 0.0, 0.0, close.optDouble(i), 0)
             }
