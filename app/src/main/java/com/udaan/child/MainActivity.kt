@@ -4,9 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.udaan.child.ui.main.MainViewModel
@@ -28,24 +36,24 @@ class MainActivity : ComponentActivity() {
                 var selectedTime by remember { mutableStateOf(LocalTime.now()) }
 
                 Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(clientId, { clientId = it }, label = { Text("Client ID") })
-                    OutlinedTextField(token, { token = it }, label = { Text("Token") })
-                    OutlinedTextField(symbol, { symbol = it }, label = { Text("Symbol") })
-                    OutlinedTextField(timeframe, { timeframe = it }, label = { Text("Timeframe") })
-                    Text("Date: $selectedDate")
-                    Text("Time: $selectedTime")
+                    OutlinedTextField(value = clientId, onValueChange = { clientId = it }, label = { Text("Client ID") })
+                    OutlinedTextField(value = token, onValueChange = { token = it }, label = { Text("Token") })
+                    OutlinedTextField(value = symbol, onValueChange = { symbol = it }, label = { Text("Symbol") })
+                    OutlinedTextField(value = timeframe, onValueChange = { timeframe = it }, label = { Text("Timeframe") })
+                    Text(text = "Date: $selectedDate")
+                    Text(text = "Time: $selectedTime")
 
                     Button(onClick = {
-                        val dt = "\( {selectedDate}T \){selectedTime}"
+                        val dt = selectedDate.toString() + "T" + selectedTime.toString()
                         vm.runAnalysis(clientId, token, symbol, timeframe, dt)
                     }) {
-                        Text("Run")
+                        Text(text = "Run")
                     }
 
                     val result by vm.resultText.collectAsState()
                     val reversals by vm.reversalsText.collectAsState()
-                    Text(result)
-                    Text(reversals)
+                    Text(text = result)
+                    Text(text = reversals)
                 }
             }
         }
