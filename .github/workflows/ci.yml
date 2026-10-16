@@ -26,9 +26,6 @@ jobs:
         with:
           packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
 
-      - name: Set up Gradle Wrapper Execution Permissions
-        run: chmod +x ./gradlew
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -37,10 +34,10 @@ jobs:
           validate-wrappers: false
 
       - name: Assemble Debug APK
-        run: ./gradlew assembleDebug --no-daemon --console=plain
+        run: gradle assembleDebug --no-daemon --console=plain
 
       - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest --no-daemon --console=plain
+        run: gradle testDebugUnitTest --no-daemon --console=plain
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
