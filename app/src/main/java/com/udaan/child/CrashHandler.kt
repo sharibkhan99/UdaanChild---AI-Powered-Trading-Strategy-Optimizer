@@ -22,47 +22,38 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
     }
 
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
-        val stackTrace = throwable.stackTraceToString()
-        
-        // Server par synchronous crash log bhejte hain (Main thread safe)
-        sendCrashToServerBlocking(stackTrace)
-
-        // Phir default handler ko call karte hain taaki app properly close ho
+        sendLog(throwable.stackTraceToString())
         defaultHandler?.uncaughtException(thread, throwable) ?: exitProcess(1)
     }
 
-    private fun sendCrashToServerBlocking(errorDetails: String) {
-        val oldPolicy = StrictMode.getThreadPolicy()
-        try {
-            // Main thread par network allow karne ke liye Lax policy set karte hain
-            StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX)
-
-            val url = URL("http://139.59.12.88:3000/api/crash")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-                doOutput = true
-                connectTimeout = 4000
-                readTimeout = 4000
+    fun sendLog(msg: String) {
+        Thread {
+            val oldPolicy = StrictMode.getThreadPolicy()
+            try {
+                StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX)
+                val url = URL("http://139.59.12.88:3000/api/crash")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    doOutput = true
+                    connectTimeout = 4000
+                    readTimeout = 4000
+                }
+                val payload = JSONObject().apply {
+                    put("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
+                    put("error", msg)
+                }
+                OutputStreamWriter(conn.outputStream, "UTF-8").use {
+                    it.write(payload.toString())
+                    it.flush()
+                }
+                conn.responseCode
+                conn.disconnect()
+            } catch (e: Exception) {
+                Log.e("CrashHandler", "send fail", e)
+            } finally {
+                StrictMode.setThreadPolicy(oldPolicy)
             }
-
-            val payload = JSONObject().apply {
-                put("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
-                put("error", errorDetails)
-            }
-
-            OutputStreamWriter(conn.outputStream, "UTF-8").use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val responseCode = conn.responseCode
-            Log.d("CrashHandler", "Crash sent successfully, response: $responseCode")
-            conn.disconnect()
-        } catch (e: Exception) {
-            Log.e("CrashHandler", "Failed to send crash log to server", e)
-        } finally {
-            StrictMode.setThreadPolicy(oldPolicy)
-        }
+        }.start()
     }
 }
