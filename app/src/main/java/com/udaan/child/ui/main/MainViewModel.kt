@@ -3,9 +3,10 @@ package com.udaan.child.ui.main
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.udaan.child.data.model.Candle
+import com.udaan.child.data.model.DailyBar
 import com.udaan.child.data.model.GAResult
 import com.udaan.child.forecast.ForecastEngine
+import com.udaan.child.forecast.ForecastUseCase
 import com.udaan.child.forecast.DhanRepository
 import com.udaan.child.optimizer.GeneticOptimizer
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val dhanRepo = DhanRepository()
+    private val forecastUseCase = ForecastUseCase(dhanRepo)
     private val geneticOptimizer = GeneticOptimizer()
 
     private val _forecastResult = MutableStateFlow<ForecastEngine.ForecastResult?>(null)
@@ -34,23 +36,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val dailyBars = dhanRepo.getHistoricalData(symbol)
-                val candles: List<Candle> = dailyBars.map { bar ->
-                    Candle(
-                        timestamp = System.currentTimeMillis(),
-                        open = bar.open,
-                        high = bar.high,
-                        low = bar.low,
-                        close = bar.close,
-                        volume = bar.volume
-                    )
-                }
+                val forecast: ForecastEngine.ForecastResult = forecastUseCase.run(symbol, hSteps = 1)
+                _forecastResult.value = forecast
 
-                if (candles.size >= 5) {
-                    val forecast = ForecastEngine.forecast(candles, hSteps = 1)
-                    _forecastResult.value = forecast
-                }
-
+                val dailyBars: List<DailyBar> = dhanRepo.getHistoricalData(symbol)
                 val optimizationResult = geneticOptimizer.optimize(dailyBars)
                 _gaResult.value = optimizationResult
 
