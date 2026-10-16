@@ -34,18 +34,16 @@ class MainActivity : AppCompatActivity() {
                 
                 statusText.text = "Fetching Market Data..."
                 val repo = NetworkModule.marketDataRepo
-                val candles = repo.fetchDailyCandles(fromDate = "2025-01-01", toDate = "2026-10-10")
+                val candles = repo.fetchDailyCandles("2025-01-01", "2026-10-10", "NIFTY")
                 
                 if (candles.isEmpty()) {
                     statusText.text = "Error: No candle data received."
                     return@launch
                 }
                 
-                // Explicit Double conversion to avoid any BigDecimal ambiguity
                 val high = candles.maxOf { it.high.toDouble() }
                 val low = candles.minOf { it.low.toDouble() }
                 
-                // Avoid destructuring ambiguity by accessing object properties or safe calls
                 val topBottom = CycleEngine.findLastTopBottom(candles)
                 val top = topBottom.first.toDouble()
                 val bot = topBottom.second.toDouble()
