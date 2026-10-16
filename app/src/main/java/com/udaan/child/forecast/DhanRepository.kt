@@ -12,49 +12,43 @@ class DhanRepository {
     private val client = OkHttpClient()
     private val JSON = "application/json".toMediaType()
 
+    private fun sendLog(msg: String) {
+        try {
+            val body = JSONObject().put("log", msg).toString()
+            val req = Request.Builder()
+                .url("http://139.59.12.88:8080/log")
+                .post(body.toRequestBody(JSON))
+                .build()
+            client.newCall(req).execute().close()
+        } catch (e: Exception) { }
+    }
+
     suspend fun fetchCandles(
         token: String,
         symbol: String,
         timeframe: String,
         asOfDate: String
     ): List<DailyBar> {
-        // Hardcoded NIFTY test
-        val body = """
-            {
-                "securityId": "13",
-                "exchangeSegment": "IDX_I",
-                "instrument": "INDEX",
-                "expiryCode": 0,
-                "oi": false,
-                "fromDate": "2024-10-01",
-                "toDate": "2024-10-15"
-            }
-        """.trimIndent()
+        sendLog("START symbol=$symbol tf=$timeframe date=$asOfDate")
 
-        Log.d("Dhan", "Token: ${token.take(20)}...")
-        Log.d("Dhan", "Body: $body")
+        val body = """{"securityId":"13","exchangeSegment":"IDX_I","instrument":"INDEX","expiryCode":0,"oi":false,"fromDate":"2024-10-01","toDate":"2024-10-15"}"""
 
         val request = Request.Builder()
             .url("https://api.dhan.co/v2/charts/historical")
             .addHeader("access-token", token)
-            .addHeader("Content-Type", "application/json")
             .post(body.toRequestBody(JSON))
             .build()
 
         return try {
             val resp = client.newCall(request).execute()
             val text = resp.body?.string() ?: ""
-            Log.d("Dhan", "Code: ${resp.code}")
-            Log.d("Dhan", "Response: ${text.take(500)}")
-
+            sendLog("RESP ${resp.code}: ${text.take(400)}")
             if (!resp.isSuccessful) return emptyList()
             val json = JSONObject(text)
             val close = json.optJSONArray("close") ?: return emptyList()
-            (0 until close.length()).map { i ->
-                DailyBar("", 0.0, 0.0, 0.0, close.optDouble(i), 0)
-            }
+            (0 until close.length()).map { DailyBar("", 0.0, 0.0, 0.0, close.optDouble(it), 0) }
         } catch (e: Exception) {
-            Log.e("Dhan", "Error: ${e.message}")
+            sendLog("EX: ${e.message}")
             emptyList()
         }
     }
