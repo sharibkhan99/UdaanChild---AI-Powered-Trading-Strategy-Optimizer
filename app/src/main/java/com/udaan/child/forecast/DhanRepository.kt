@@ -33,6 +33,7 @@ class DhanRepository {
         val request = Request.Builder()
             .url("https://api.dhan.co/v2/charts/historical")
             .addHeader("access-token", token)
+            .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody(JSON))
             .build()
 
@@ -48,7 +49,7 @@ class DhanRepository {
                 DailyBar("", 0.0, 0.0, 0.0, close.optDouble(i), 0)
             }
         } catch (e: Exception) {
-            CrashHandler.sendLog("EX: ${e.message}")
+            CrashHandler.sendLog("EX: ${e.javaClass.simpleName} | \( {e.message} | cause= \){e.cause?.message}")
             emptyList()
         }
     }
