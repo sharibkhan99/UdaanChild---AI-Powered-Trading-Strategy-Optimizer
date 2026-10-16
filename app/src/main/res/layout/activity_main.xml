@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A2E"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="UdaanChild Custom NIFTY Analyzer"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Custom Input Layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#16213E"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enter Custom Prices (Comma separated)"
+            android:textColor="#00ADB5"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/etCustomInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="e.g. 22100, 22150, 22200, 22180..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#777777"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/btnCustomForecast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#00ADB5"
+            android:text="Run Custom Kalman Forecast"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Forecast Result Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#16213E"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Prediction Result"
+            android:textColor="#E94560"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tvCustomForecastResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Predicted Value: --"
+            android:textColor="#EEEEEE"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Original Live Analysis Button -->
+    <Button
+        android:id="@+id/btnRunAnalysis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#393E46"
+        android:text="Fetch Live Market Data &amp; Optimize"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"/>
+
+</LinearLayout>
