@@ -47,7 +47,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
-
-    // Added Apache Commons Math for Kalman Filter Matrix & Vector calculations
     implementation("org.apache.commons:commons-math3:3.6.1")
+
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
