@@ -1,6 +1,6 @@
 package com.udaan.child.forecast
 
-import com.udaan.child.data.model.Candle
+import com.udaan.child.data.model.DailyBar
 import org.apache.commons.math3.linear.ArrayRealVector
 import org.apache.commons.math3.linear.MatrixUtils
 import org.apache.commons.math3.linear.RealMatrix
@@ -60,22 +60,22 @@ object ForecastEngine {
         return cur
     }
 
-    fun forecast(candles: List<Candle>, hSteps: Int): ForecastResult {
-        require(candles.size >= 5) { "Need >=5 candles for Kalman state initialization" }
+    fun forecast(bars: List<DailyBar>, hSteps: Int): ForecastResult {
+        require(bars.size >= 5) { "Need >=5 bars for Kalman state initialization" }
         require(hSteps >= 1) { "Horizon must be >=1 trading day" }
 
         val dt = 1.0 / (252.0 * 390.0)
         val phi = (A.scalarMultiply(dt)).exp()
         val qd  = phi.multiply(Q).multiply(phi.transpose()).scalarMultiply(dt)
 
-        var xVec = doubleArrayOf(candles.first().close, 0.0, 0.0, 0.0)
+        var xVec = doubleArrayOf(bars.first().close, 0.0, 0.0, 0.0)
         var pMat = MatrixUtils.createRealIdentityMatrix(4).scalarMultiply(1e3)
 
-        for (c in candles) {
+        for (b in bars) {
             val xPred = phi.operate(xVec)
             val pPred = phi.multiply(pMat).multiply(phi.transpose()).add(qd)
 
-            val y = c.close
+            val y = b.close
             val sMat = C.multiply(pPred).multiply(C.transpose()).add(MatrixUtils.createRealMatrix(arrayOf(doubleArrayOf(R))))
             val sVal = sMat.getEntry(0, 0)
             
@@ -92,7 +92,7 @@ object ForecastEngine {
         val varMatrix = C.multiply(phiH).multiply(pMat).multiply(phiH.transpose()).multiply(C.transpose()).add(MatrixUtils.createRealMatrix(arrayOf(doubleArrayOf(R))))
         val std = Math.sqrt(varMatrix.getEntry(0, 0).coerceAtLeast(0.0))
 
-        val lastInstant = Instant.ofEpochMilli(candles.last().timestamp)
+        val lastInstant = Instant.now()
         val forecastInstant = addTradingDays(lastInstant, hSteps)
 
         return ForecastResult(yHat, std, forecastInstant)
@@ -111,12 +111,8 @@ object ForecastEngine {
             customValues
         }
 
-        val baseTime = System.currentTimeMillis()
-        val dayMillis = 24 * 60 * 60 * 1000L
-
-        val dummyCandles = processedValues.mapIndexed { index, price ->
-            Candle(
-                timestamp = baseTime - ((processedValues.size - index) * dayMillis),
+        val dummyBars = processedValues.map { price ->
+            DailyBar(
                 open = price,
                 high = price * 1.005,
                 low = price * 0.995,
@@ -125,6 +121,6 @@ object ForecastEngine {
             )
         }
         
-        return forecast(dummyCandles, hSteps)
+        return forecast(dummyBars, hSteps)
     }
 }
