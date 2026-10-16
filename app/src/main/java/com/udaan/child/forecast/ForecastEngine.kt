@@ -11,9 +11,6 @@ import java.time.temporal.ChronoUnit
 
 object ForecastEngine {
 
-    // -----------------------------------------------------------
-    // 1️⃣ Model constants
-    // -----------------------------------------------------------
     private const val PERIOD_DAYS = 252.0
     private const val OMEGA = 2.0 * Math.PI / PERIOD_DAYS
 
@@ -26,7 +23,6 @@ object ForecastEngine {
     private val C: RealMatrix = MatrixUtils.createRealMatrix(arrayOf(doubleArrayOf(1.0, 0.0, 0.0, 0.0)))
     private const val R = 1e-3
 
-    // Process-noise covariance Q
     private val Q: RealMatrix = MatrixUtils.createRealMatrix(arrayOf(
         doubleArrayOf(1e-4, 0.0,  0.0,  0.0),
         doubleArrayOf(0.0,  1e-6, 0.0,  0.0),
@@ -34,15 +30,12 @@ object ForecastEngine {
         doubleArrayOf(0.0,  0.0,  0.0,  1e-5)
     ))
 
-    // -----------------------------------------------------------
     data class ForecastResult(
-        val value: Double,               // point forecast ŷ
-        val stdDev: Double,              // 1‑σ
-        val forecastInstant: Instant     // calendar date‑time (UTC)
+        val value: Double,
+        val stdDev: Double,
+        val forecastInstant: Instant
     )
 
-    // -----------------------------------------------------------
-    /** Robust Matrix Exponential extension for Apache Commons Math RealMatrix */
     private fun RealMatrix.exp(): RealMatrix {
         val n = this.rowDimension
         var term = MatrixUtils.createRealIdentityMatrix(n)
@@ -51,14 +44,11 @@ object ForecastEngine {
         for (i in 1..20) {
             factorial *= i.toDouble()
             term = term.multiply(this)
-            val scaledTerm = term.scalarMultiply(1.0 / factorial)
-            sum = sum.add(scaledTerm)
+            sum = sum.add(term.scalarMultiply(1.0 / factorial))
         }
         return sum
     }
 
-    // -----------------------------------------------------------
-    /** Business‑day adder – skips Sat/Sun */
     private fun addTradingDays(base: Instant, days: Int): Instant {
         var cur = base
         var added = 0
@@ -70,33 +60,21 @@ object ForecastEngine {
         return cur
     }
 
-    // -----------------------------------------------------------
-    /**
-     * @param candles      Chronologically sorted (old → new). Only the **close** price is used.
-     * @param hSteps       Horizon in **trading days** (1 = next trading day, 5 = 5‑day ahead ...)
-     */
-    fun forecast(
-        candles: List<Candle>,
-        hSteps: Int
-    ): ForecastResult {
+    fun forecast(candles: List<Candle>, hSteps: Int): ForecastResult {
         require(candles.size >= 5) { "Need >=5 candles for Kalman state initialization" }
         require(hSteps >= 1) { "Horizon must be >=1 trading day" }
 
-        // ---- 1️⃣ Build discrete‑time Kalman filter step ----
-        val dt = 1.0 / (252.0 * 390.0)               // 1 minute ≈ 1/(252*390) trading‑day
-        val phi = (A.scalarMultiply(dt)).exp()       // Φ(Δt)
+        val dt = 1.0 / (252.0 * 390.0)
+        val phi = (A.scalarMultiply(dt)).exp()
         val qd  = phi.multiply(Q).multiply(phi.transpose()).scalarMultiply(dt)
 
-        // ---- 2️⃣ Run continuous‑time Kalman filter over the candle series ----
         var xVec = doubleArrayOf(candles.first().close, 0.0, 0.0, 0.0)
         var pMat = MatrixUtils.createRealIdentityMatrix(4).scalarMultiply(1e3)
 
         for (c in candles) {
-            // ---- Predict ----
             val xPred = phi.operate(xVec)
             val pPred = phi.multiply(pMat).multiply(phi.transpose()).add(qd)
 
-            // ---- Update (measurement = close price) ----
             val y = c.close
             val sMat = C.multiply(pPred).multiply(C.transpose()).add(MatrixUtils.createRealMatrix(arrayOf(doubleArrayOf(R))))
             val sVal = sMat.getEntry(0, 0)
@@ -105,43 +83,28 @@ object ForecastEngine {
             val innov = y - C.operate(xPred)[0]
 
             xVec = ArrayRealVector(xPred).add(ArrayRealVector(k.getColumn(0)).mapMultiply(innov)).toArray()
-            
-            val identity = MatrixUtils.createRealIdentityMatrix(4)
-            pMat = identity.subtract(k.multiply(C)).multiply(pPred)
+            pMat = MatrixUtils.createRealIdentityMatrix(4).subtract(k.multiply(C)).multiply(pPred)
         }
 
-        // ---- 3️⃣ h‑step ahead analytic forecast ----
         val phiH = (A.scalarMultiply(hSteps.toDouble())).exp()
         val yHat = C.multiply(phiH).multiply(MatrixUtils.createColumnRealMatrix(xVec)).getEntry(0, 0)
 
         val varMatrix = C.multiply(phiH).multiply(pMat).multiply(phiH.transpose()).multiply(C.transpose()).add(MatrixUtils.createRealMatrix(arrayOf(doubleArrayOf(R))))
-        val forecastVariance = varMatrix.getEntry(0, 0)
-        val std = Math.sqrt(forecastVariance.coerceAtLeast(0.0))
+        val std = Math.sqrt(varMatrix.getEntry(0, 0).coerceAtLeast(0.0))
 
-        // ---- 4️⃣ Calendar date for the horizon ----
-        val lastTimestamp = candles.last().timestamp
-        val lastObsInstant = Instant.ofEpochMilli(lastTimestamp)
-        val forecastInstant = addTradingDays(lastObsInstant, hSteps)
+        val lastInstant = Instant.ofEpochMilli(candles.last().timestamp)
+        val forecastInstant = addTradingDays(lastInstant, hSteps)
 
         return ForecastResult(yHat, std, forecastInstant)
     }
 
-    // -----------------------------------------------------------
-    /**
-     * User-provided custom numbers ke base par Kalman Filter prediction calculate karne ke liye.
-     */
     fun forecastCustom(customValues: List<Double>, hSteps: Int = 1): ForecastResult {
         require(customValues.isNotEmpty()) { "Input values cannot be empty" }
         
-        // Agar values 30 se kam hain, toh Kalman filter ke liye padding/interpolation kar lo
         val processedValues = if (customValues.size < 30) {
             val firstVal = customValues.first()
             val padded = mutableListOf<Double>()
-            // Synthetic preceding points add karna taaki length 30 ho jaye
-            val deficit = 30 - customValues.size
-            for (i in 0 until deficit) {
-                padded.add(firstVal)
-            }
+            repeat(30 - customValues.size) { padded.add(firstVal) }
             padded.addAll(customValues)
             padded
         } else {
