@@ -21,6 +21,11 @@ jobs:
           java-version: '17'
           cache: ''
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -40,3 +45,4 @@ jobs:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
+          
