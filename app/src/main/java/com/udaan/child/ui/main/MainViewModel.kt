@@ -4,11 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.udaan.child.data.model.DailyBar
-import com.udaan.child.data.model.GAResult
-import com.udaan.child.forecast.ForecastEngine
-import com.udaan.child.forecast.ForecastUseCase
 import com.udaan.child.forecast.DhanRepository
-import com.udaan.child.optimizer.GeneticOptimizer
+import com.udaan.child.forecast.ForecastEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,54 +14,51 @@ import kotlinx.coroutines.launch
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val dhanRepo = DhanRepository()
-    private val forecastUseCase = ForecastUseCase(dhanRepo)
-    private val geneticOptimizer = GeneticOptimizer()
 
-    private val _forecastResult = MutableStateFlow<ForecastEngine.ForecastResult?>(null)
-    val forecastResult: StateFlow<ForecastEngine.ForecastResult?> = _forecastResult.asStateFlow()
+    private val _resultText = MutableStateFlow("Ready")
+    val resultText: StateFlow<String> = _resultText.asStateFlow()
 
-    private val _gaResult = MutableStateFlow<GAResult?>(null)
-    val gaResult: StateFlow<GAResult?> = _gaResult.asStateFlow()
+    private val _reversalsText = MutableStateFlow("")
+    val reversalsText: StateFlow<String> = _reversalsText.asStateFlow()
 
-    private val _customForecastResult = MutableStateFlow<ForecastEngine.ForecastResult?>(null)
-    val customForecastResult: StateFlow<ForecastEngine.ForecastResult?> = _customForecastResult.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    fun runAnalysis(symbol: String = "NIFTY") {
+    fun runAnalysis(clientId: String, token: String, symbol: String, timeframe: String, asOfDate: String) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _resultText.value = "Fetching $timeframe data..."
             try {
-                val forecast: ForecastEngine.ForecastResult = forecastUseCase.run(symbol, hSteps = 1)
-                _forecastResult.value = forecast
+                val bars = dhanRepo.fetchCandles(clientId, token, symbol, timeframe, asOfDate)
+                if (bars.isEmpty()) {
+                    _resultText.value = "No data returned"
+                    return@launch
+                }
 
-                val dailyBars: List<DailyBar> = dhanRepo.getHistoricalData(symbol)
-                val optimizationResult = geneticOptimizer.optimize(dailyBars)
-                _gaResult.value = optimizationResult
+                val forecast = ForecastEngine.forecast(bars, 1)
+                _resultText.value = "Last: ${"%.2f".format(bars.last().close)} | Forecast: ${"%.2f".format(forecast.value)}"
 
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun runCustomForecast(inputString: String) {
-        viewModelScope.launch {
-            try {
-                val numbers: List<Double> = inputString.split(",")
-                    .map { token: String -> token.trim().toDoubleOrNull() }
-                    .filterNotNull()
-
-                if (numbers.isNotEmpty()) {
-                    val prediction = ForecastEngine.forecastCustom(numbers, hSteps = 1)
-                    _customForecastResult.value = prediction
+                val reversals = detectReversals(bars)
+                _reversalsText.value = reversals.joinToString("\n") { r ->
+                    "${r.date} — ${if (r.bullish) "BULLISH" else "BEARISH"} @ ${"%.2f".format(r.price)}"
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                _resultText.value = "Error: ${e.message}"
             }
         }
     }
+
+    private fun detectReversals(bars: List<DailyBar>): List<Reversal> {
+        val result = mutableListOf<Reversal>()
+        if (bars.size < 5) return result
+        for (i in 2 until bars.size - 2) {
+            val prev = bars[i - 1].close
+            val curr = bars[i].close
+            val next = bars[i + 1].close
+            if (prev < curr && curr > next) {
+                result.add(Reversal(bars[i].date, false, curr))
+            } else if (prev > curr && curr < next) {
+                result.add(Reversal(bars[i].date, true, curr))
+            }
+        }
+        return result.takeLast(10)
+    }
+
+    data class Reversal(val date: String, val bullish: Boolean, val price: Double)
 }
