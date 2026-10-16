@@ -33,14 +33,13 @@ class DhanRepository {
         val request = Request.Builder()
             .url("https://api.dhan.co/v2/charts/historical")
             .addHeader("access-token", token)
-            .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody(JSON))
             .build()
 
         return try {
             val resp = client.newCall(request).execute()
             val text = resp.body?.string() ?: ""
-            CrashHandler.sendLog("RESP ${resp.code}: ${text.take(400)}")
+            CrashHandler.sendLog("RESP " + resp.code + ": " + text.take(400))
 
             if (!resp.isSuccessful) return emptyList()
             val json = JSONObject(text)
@@ -49,7 +48,7 @@ class DhanRepository {
                 DailyBar("", 0.0, 0.0, 0.0, close.optDouble(i), 0)
             }
         } catch (e: Exception) {
-            CrashHandler.sendLog("EX: ${e.javaClass.simpleName} | \( {e.message} | cause= \){e.cause?.message}")
+            CrashHandler.sendLog("EX: " + e.javaClass.simpleName + " | " + e.message)
             emptyList()
         }
     }
