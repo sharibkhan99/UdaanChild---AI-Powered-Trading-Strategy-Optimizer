@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit
 
 class MainViewModel @JvmOverloads constructor(
     application: Application,
-    private val repository: MarketDataRepository = MarketDataRepositoryImpl(),
-    private val prefs: PreferencesManager = PreferencesManager()
+    private val repository: MarketDataRepository = MarketDataRepositoryImpl(application),
+    private val prefs: PreferencesManager = PreferencesManager(application)
 ) : AndroidViewModel(application) {
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Idle)
