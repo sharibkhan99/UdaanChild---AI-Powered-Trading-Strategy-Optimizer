@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Udaan" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Parent ko MaterialComponents ya AppCompat par set karein -->
+    <style name="Theme.Udaan" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        
+        <!-- Optional: Primary & Secondary brand colors -->
+        <item name="colorPrimary">#1A1A2E</item>
+        <item name="colorSecondary">#E94560</item>
     </style>
 </resources>
