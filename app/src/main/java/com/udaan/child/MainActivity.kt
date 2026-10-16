@@ -3,7 +3,11 @@ package com.udaan.child
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -16,16 +20,47 @@ import java.net.URL
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // 1. Crash Handler initialize karein taaki server par crash logs chale jayein
+        CrashHandler.init(this)
+
+        // 2. Dynamic UI Layout (TextView + Test Crash Button)
+        val rootLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#1A1A2E"))
+            setPadding(40, 40, 40, 40)
+        }
+
         val statusText = TextView(this).apply {
             text = "Initializing UdaanChild App..."
             textSize = 16f
-            setPadding(40, 40, 40, 40)
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#1A1A2E"))
+            gravity = Gravity.CENTER
         }
-        setContentView(statusText)
 
+        val btnTestCrash = Button(this).apply {
+            text = "TEST SERVER CRASH LOG"
+            setOnClickListener {
+                Toast.makeText(this@MainActivity, "Sending test crash to server...", Toast.LENGTH_SHORT).show()
+                // Manually crash/error trigger karke server par bhejte hain
+                try {
+                    throw RuntimeException("MANUAL TEST CRASH: UdaanChild app test log verification.")
+                } catch (e: Exception) {
+                    CrashHandler.uncaughtException(Thread.currentThread(), e)
+                }
+            }
+        }
+
+        rootLayout.addView(statusText)
+        rootLayout.addView(btnTestCrash, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 40 })
+
+        setContentView(rootLayout)
+
+        // 3. Market Data Fetching Routine
         lifecycleScope.launch {
             try {
                 statusText.text = "Fetching Market Data..."
