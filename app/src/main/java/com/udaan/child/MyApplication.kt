@@ -3,10 +3,8 @@ package com.udaan.child
 import android.app.Application
 import android.os.Build
 import android.util.Log
-import com.udaan.child.data.local.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -24,16 +22,6 @@ class MyApplication : Application() {
         CrashHandler.init(this)
         Log.d("UDAAN", "Application started")
         sendLog("APP_START", "Application started")
-
-        scope.launch {
-            try {
-                val prefs = PreferencesManager(this@MyApplication)
-                val symbol = prefs.getSymbol().first() ?: "NIFTY"
-                sendLog("SYMBOL", "Loaded symbol: $symbol")
-            } catch (e: Exception) {
-                sendLog("ERROR", "Prefs error: ${e.message}")
-            }
-        }
     }
 
     fun sendLog(tag: String, msg: String) {
