@@ -21,7 +21,7 @@ object InstrumentRepository {
                 if (c.size < 8) return@mapNotNull null
                 Instrument(
                     securityId = c[2].trim(),
-                    exchangeSegment = "\( {c[0].trim()}_ \){c[1].trim()}",
+                    exchangeSegment = c[0].trim() + "_" + c[1].trim(),
                     instrument = c[3].trim(),
                     tradingSymbol = c[5].trim(),
                     displayName = c[7].trim()
