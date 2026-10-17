@@ -18,13 +18,13 @@ object InstrumentRepository {
             val text = resp.body?.string() ?: return@withContext
             cached = text.lines().drop(1).mapNotNull { line ->
                 val c = line.split(",")
-                if (c.size < 14) return@mapNotNull null
+                if (c.size < 8) return@mapNotNull null
                 Instrument(
-                    securityId = c[0].trim(),
-                    exchangeSegment = c[1].trim(),
-                    instrument = c[2].trim(),
+                    securityId = c[2].trim(),
+                    exchangeSegment = "\( {c[0].trim()}_ \){c[1].trim()}",
+                    instrument = c[3].trim(),
                     tradingSymbol = c[5].trim(),
-                    displayName = c[5].trim()
+                    displayName = c[7].trim()
                 )
             }
         } catch (_: Exception) {}
@@ -34,9 +34,7 @@ object InstrumentRepository {
         val q = query.uppercase().trim()
         if (q.isEmpty()) return null
         return cached.find { 
-            it.tradingSymbol.equals(q, true) || 
-            it.displayName.equals(q, true) ||
-            it.tradingSymbol.contains(q, true) ||
+            it.tradingSymbol.contains(q, true) || 
             it.displayName.contains(q, true)
         }
     }
@@ -49,4 +47,6 @@ object InstrumentRepository {
             it.displayName.contains(q, true)
         }.take(20)
     }
+
+    fun getCount(): Int = cached.size
 }
