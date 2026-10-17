@@ -32,10 +32,21 @@ object InstrumentRepository {
 
     fun find(query: String): Instrument? {
         val q = query.uppercase().trim()
+        if (q.isEmpty()) return null
         return cached.find { 
             it.tradingSymbol.equals(q, true) || 
             it.displayName.equals(q, true) ||
-            it.tradingSymbol.startsWith(q, true)
+            it.tradingSymbol.contains(q, true) ||
+            it.displayName.contains(q, true)
         }
+    }
+
+    fun search(query: String): List<Instrument> {
+        val q = query.uppercase().trim()
+        if (q.isEmpty()) return emptyList()
+        return cached.filter { 
+            it.tradingSymbol.contains(q, true) || 
+            it.displayName.contains(q, true)
+        }.take(20)
     }
 }
