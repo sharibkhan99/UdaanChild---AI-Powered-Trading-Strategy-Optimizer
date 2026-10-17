@@ -1,44 +1,52 @@
-package com.udaan.child
+package com.udaan.child.data.repository
 
-import android.app.Application
-import android.os.Build
-import android.util.Log
-import kotlinx.coroutines.CoroutineScope
+import com.udaan.child.data.model.Instrument
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 
-class MyApplication : Application() {
-
-    private val scope = CoroutineScope(Dispatchers.IO)
+object InstrumentRepository {
+    private const val CSV_URL = "https://images.dhan.co/api-data/api-scrip-master.csv"
     private val client = OkHttpClient()
+    private var cached: List<Instrument> = emptyList()
 
-    override fun onCreate() {
-        super.onCreate()
-        CrashHandler.init(this)
-        Log.d("UDAAN", "Application started")
-        sendLog("APP_START", "Application started")
+    suspend fun load() = withContext(Dispatchers.IO) {
+        if (cached.isNotEmpty()) return@withContext
+        try {
+            val resp = client.newCall(Request.Builder().url(CSV_URL).build()).execute()
+            val text = resp.body?.string() ?: return@withContext
+            cached = text.lines().drop(1).mapNotNull { line ->
+                val c = line.split(",")
+                if (c.size < 8) return@mapNotNull null
+                Instrument(
+                    securityId = c[2].trim(),
+                    exchangeSegment = "\( {c[0].trim()}_ \){c[1].trim()}",
+                    instrument = c[3].trim(),
+                    tradingSymbol = c[5].trim(),
+                    displayName = c[7].trim()
+                )
+            }
+        } catch (_: Exception) {}
     }
 
-    fun sendLog(tag: String, msg: String) {
-        Log.d("UDAAN", "$tag: $msg")
-        scope.launch {
-            try {
-                val url = "http://139.59.12.88:3000/api/crash"
-                val payload = JSONObject().apply {
-                    put("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
-                    put("error", "$tag | $msg | Android ${Build.VERSION.RELEASE}")
-                }
-                val body = payload.toString().toRequestBody("application/json".toMediaType())
-                val request = Request.Builder().url(url).post(body).build()
-                client.newCall(request).execute()
-            } catch (e: Exception) {
-                Log.e("UDAAN", "Log send failed: ${e.message}")
-            }
+    fun find(query: String): Instrument? {
+        val q = query.uppercase().trim()
+        if (q.isEmpty()) return null
+        return cached.find { 
+            it.tradingSymbol.contains(q, true) || 
+            it.displayName.contains(q, true)
         }
     }
+
+    fun search(query: String): List<Instrument> {
+        val q = query.uppercase().trim()
+        if (q.isEmpty()) return emptyList()
+        return cached.filter { 
+            it.tradingSymbol.contains(q, true) || 
+            it.displayName.contains(q, true)
+        }.take(20)
+    }
+
+    fun getCount(): Int = cached.size
 }
